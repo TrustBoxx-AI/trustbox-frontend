@@ -1,8 +1,6 @@
-/* ══════════════════════════════════════════════════════
-   constants/index.js  —  TrustBox
-   All shared data constants. Import from here — never
-   define these inline in component files.
-   ══════════════════════════════════════════════════════ */
+/* constants/index.js — TrustBox
+   All shared data constants.
+   ─────────────────────────────────────────────────────── */
 
 export const ENTITY_TYPES = [
   {
@@ -13,6 +11,8 @@ export const ENTITY_TYPES = [
     action: "verify",
     actionLabel: "Verify",
     actionIcon: "✓",
+    chainTarget: null,
+    requiresWallet: null,
     desc: "Register an autonomous AI agent — model, operator, capabilities",
     fields: [
       { name: "Agent Name",   type: "text",   placeholder: "e.g. ResearchBot v2"        },
@@ -30,6 +30,8 @@ export const ENTITY_TYPES = [
     action: "audit",
     actionLabel: "Audit",
     actionIcon: "⬡",
+    chainTarget: null,
+    requiresWallet: null,
     desc: "Anchor and audit a smart contract to TrustBox ledger",
     fields: [
       { name: "Contract Name",    type: "text",   placeholder: "e.g. TrustEscrow v1"   },
@@ -47,6 +49,8 @@ export const ENTITY_TYPES = [
     action: "scan",
     actionLabel: "Scan",
     actionIcon: "◎",
+    chainTarget: null,
+    requiresWallet: null,
     desc: "Register an AI-powered software product or SaaS",
     fields: [
       { name: "Product Name",     type: "text",   placeholder: "e.g. Nexum Analytics"    },
@@ -64,6 +68,8 @@ export const ENTITY_TYPES = [
     action: "scan",
     actionLabel: "Scan",
     actionIcon: "◎",
+    chainTarget: null,
+    requiresWallet: null,
     desc: "Log and verify multi-agent communication and handoff chains",
     fields: [
       { name: "Workflow Name",  type: "text",   placeholder: "e.g. Research Pipeline"  },
@@ -81,6 +87,8 @@ export const ENTITY_TYPES = [
     action: "scan",
     actionLabel: "Scan",
     actionIcon: "◎",
+    chainTarget: null,
+    requiresWallet: null,
     desc: "Register an automated workflow — triggers, steps, outputs",
     fields: [
       { name: "Workflow Name", type: "text",   placeholder: "e.g. Lead Enrichment Flow" },
@@ -90,15 +98,94 @@ export const ENTITY_TYPES = [
       { name: "Output Type",   type: "select", options: ["data","notification","action","report"] },
     ],
   },
+
+  /* ── NEW: Credit Score ──────────────────────────────── */
+  {
+    id: "credit",
+    label: "Credit Profile",
+    icon: "◉",
+    accentVar: "--c-teal",
+    action: "score",
+    actionLabel: "Score",
+    actionIcon: "◎",
+    chainTarget: "hedera",
+    requiresWallet: "hedera",
+    badge: "ZK-Proven",
+    badgeColor: "#00e5c0",
+    desc: "AI-generated credit score with transparent methodology, private data, anchored on Hedera HCS",
+    fields: [
+      { name: "Income Range",       type: "select", options: ["Under $25k","$25k–$50k","$50k–$100k","$100k–$250k","$250k+"] },
+      { name: "Employment Status",  type: "select", options: ["Full-time employed","Self-employed","Part-time","Unemployed","Student","Retired"] },
+      { name: "Debt Categories",    type: "multi-check", options: ["Mortgage","Auto Loan","Student Loan","Credit Cards","Personal Loan","Medical Debt","None"] },
+      { name: "Payment History",    type: "payment-history" },
+      { name: "Bank Statement",     type: "file-upload", accept: ".pdf,.csv", hint: "Encrypted client-side — never sent in plaintext" },
+    ],
+  },
+
+  /* ── NEW: Private Security Audit ───────────────────── */
+  {
+    id: "security",
+    label: "Private Security Audit",
+    icon: "⚿",
+    accentVar: "--c-purple",
+    action: "blindaudit",
+    actionLabel: "Blind Audit",
+    actionIcon: "⚿",
+    chainTarget: "avalanche",
+    requiresWallet: "evm",
+    badge: "TEE Protected",
+    badgeColor: "#a78bfa",
+    desc: "Audit your code without the agent ever seeing it — TEE blind computation, attested on Avalanche",
+    fields: [
+      { name: "Project Name",  type: "text",        placeholder: "e.g. MyDeFi Protocol" },
+      { name: "Security Agent",type: "agent-select" },
+      { name: "Code Bundle",   type: "file-upload",  accept: ".zip,.tar.gz", hint: "Encrypted with agent public key before upload" },
+      { name: "Audit Scope",   type: "multi-check",  options: ["Smart Contracts","Backend API","Frontend","Dependencies","Secrets & Keys","Licence Compliance"] },
+      { name: "Notes",         type: "encrypted-text", placeholder: "Context for the auditor — end-to-end encrypted", hint: "End-to-end encrypted" },
+    ],
+  },
+
+  /* ── NEW: Verifiable Intent ─────────────────────────── */
+  {
+    id: "intent",
+    label: "Verifiable Intent",
+    icon: "⟡",
+    accentVar: "--c-amber",
+    action: "execute",
+    actionLabel: "Execute",
+    actionIcon: "→",
+    chainTarget: "both",
+    requiresWallet: "both",
+    badge: "Chainlink Powered",
+    badgeColor: "#ffb347",
+    desc: "Natural language → verified on-chain action. Review the exact spec before it runs.",
+    fields: [
+      { name: "Intent Category",  type: "select",         options: ["Travel Booking","Portfolio Rebalance","Contributor Tip"] },
+      { name: "Your Intent",      type: "intent-textarea", placeholder: "e.g. Book a hotel in NYC for under $400/night for 3 nights in July…", hint: "Plain English. AI parses → you review → you sign → chain executes." },
+      { name: "Budget Limit",     type: "text",            placeholder: "e.g. $1,200 total" },
+      { name: "Execution Wallet", type: "text",            placeholder: "0x… (auto-filled on wallet connect)" },
+    ],
+  },
 ];
 
+/* ── Action metadata ─────────────────────────────────── */
 export const ACTION_META = {
-  verify: { color: "#52b6ff", label: "Verifying" },
-  audit:  { color: "#ffb347", label: "Auditing"  },
-  scan:   { color: "#00e5c0", label: "Scanning"  },
+  verify:     { color: "#52b6ff", label: "Verifying"   },
+  audit:      { color: "#ffb347", label: "Auditing"    },
+  scan:       { color: "#00e5c0", label: "Scanning"    },
+  score:      { color: "#00e5c0", label: "Scoring"     },
+  blindaudit: { color: "#a78bfa", label: "Blind Audit" },
+  execute:    { color: "#ffb347", label: "Executing"   },
 };
 
-export const ACTION_SCORE = { verify: 94, audit: 76, scan: 87 };
+export const ACTION_SCORE = {
+  verify:     94,
+  audit:      76,
+  scan:       87,
+  score:      781,
+  blindaudit: 92,
+  execute:    null,
+};
 
 export const STATUS_COLOR = { pass: "#00e5c0", warn: "#ffb347", fail: "#ff4d6a" };
 export const STATUS_ICON  = { pass: "✓",       warn: "⚠",       fail: "✕"       };
@@ -145,6 +232,48 @@ export const LOG_LINES = {
     "Writing audit log…",
     "✓ Scan complete.",
   ],
+  score: [
+    "Encrypting financial data client-side…",
+    "Submitting encrypted payload to TEE…",
+    "Loading TrustCredit scoring model v2.1…",
+    "Analysing income & employment signals…",
+    "Evaluating debt-to-income ratio…",
+    "Processing 12-month payment history…",
+    "Parsing bank statement transaction categories…",
+    "Computing weighted credit score…",
+    "Generating methodology receipt…",
+    "Uploading methodology receipt to IPFS…",
+    "Anchoring score to Hedera HCS…",
+    "✓ Credit score verified & anchored.",
+  ],
+  blindaudit: [
+    "Fetching agent public key from Avalanche…",
+    "Encrypting code bundle with agent public key…",
+    "Submitting encrypted bundle to TEE endpoint…",
+    "Intel SGX attestation received — blind execution confirmed…",
+    "Static analysis pass 1: vulnerability pattern matching…",
+    "Static analysis pass 2: dependency CVE audit…",
+    "Secret & API key detection scan…",
+    "Audit scope coverage verification…",
+    "Generating findings report inside TEE…",
+    "Uploading encrypted report to IPFS…",
+    "Anchoring TEE attestation to Avalanche…",
+    "✓ Blind audit complete. Your code was never seen.",
+  ],
+  execute: [
+    "Parsing natural language intent…",
+    "Calling Chainlink Function (Groq / Llama 3.1)…",
+    "Structured intent spec generated…",
+    "Computing spec hash for approval…",
+    "⚡ Awaiting user review & signature…",
+    "Signature verified — submitting to IntentVault…",
+    "Chainlink Automation upkeep triggered…",
+    "Fetching Chainlink Price Feed data…",
+    "Executing verified action on-chain…",
+    "Recording execution hash…",
+    "Anchoring full intent trail to Hedera HCS…",
+    "✓ Intent executed & verifiably recorded.",
+  ],
 };
 
 export const MOCK_FINDINGS = {
@@ -169,30 +298,151 @@ export const MOCK_FINDINGS = {
     { label: "Exfiltration risk",      status: "pass", detail: "No suspicious outbound traffic detected"    },
     { label: "Adversarial robustness", status: "fail", detail: "Vulnerable to prompt injection — remediate" },
   ],
+  score: [
+    { label: "Payment history",     status: "pass", detail: "11/12 months on-time — excellent track record"          },
+    { label: "Debt-to-income",      status: "pass", detail: "DTI 28% — well below recommended 35% threshold"        },
+    { label: "Income verification", status: "pass", detail: "Income range confirmed via encrypted bank statement"    },
+    { label: "Credit utilisation",  status: "warn", detail: "Card utilisation 42% — recommended below 30%"          },
+    { label: "Account diversity",   status: "pass", detail: "Healthy mix of instalment and revolving credit"         },
+    { label: "ZK proof generated",  status: "pass", detail: "Score proven without exposing raw financial data"       },
+    { label: "Hedera HCS anchor",   status: "pass", detail: "Score immutably recorded on Hedera Consensus Service"  },
+  ],
+  blindaudit: [
+    { label: "TEE attestation",      status: "pass", detail: "Intel SGX enclave verified — operator never saw code"   },
+    { label: "Reentrancy guard",     status: "pass", detail: "No reentrancy vulnerabilities detected"                },
+    { label: "Access control",       status: "warn", detail: "2 functions missing onlyOwner — review required"       },
+    { label: "Integer overflow",     status: "pass", detail: "Checked arithmetic used throughout"                    },
+    { label: "Secret detection",     status: "pass", detail: "No hardcoded keys or secrets found"                   },
+    { label: "Dependency CVEs",      status: "warn", detail: "3 dependencies with known CVEs — update required"      },
+    { label: "Licence compliance",   status: "pass", detail: "All deps MIT or Apache 2.0 compatible"                },
+  ],
+  execute: [
+    { label: "Intent parsed",          status: "pass", detail: "NL → structured spec confirmed at 97% confidence"    },
+    { label: "Signature verified",     status: "pass", detail: "Wallet signature matches approved spec hash"         },
+    { label: "Price feed verified",    status: "pass", detail: "Chainlink Price Feed used — no manipulation risk"    },
+    { label: "Execution matches spec", status: "pass", detail: "On-chain execution hash matches approved intent"     },
+    { label: "Hedera trail",          status: "pass", detail: "Full NL → approval → execution trail on HCS"         },
+    { label: "Zero deviation",        status: "pass", detail: "No drift between approved intent and executed action" },
+  ],
 };
 
 export const TICKER_ITEMS = [
-  { c: "#00e5c0", t: "agt_8f2k9x — verify — 94/100"      },
-  { c: "#ff4d6a", t: "agt_3k1p0z — anomaly flagged"       },
-  { c: "#52b6ff", t: "workflow_0041 — scan — checksum OK" },
-  { c: "#00e5c0", t: "a2a_handoff → agt_7y — confirmed"   },
-  { c: "#ffb347", t: "contract:0x3a9f — audit complete"   },
-  { c: "#52b6ff", t: "nexum.io — identity verified"       },
-  { c: "#a78bfa", t: "pipeline_0098 — 14 steps — logged"  },
+  { c: "#00e5c0", t: "agt_8f2k9x — verify — 94/100"          },
+  { c: "#ff4d6a", t: "agt_3k1p0z — anomaly flagged"           },
+  { c: "#52b6ff", t: "workflow_0041 — scan — checksum OK"     },
+  { c: "#00e5c0", t: "a2a_handoff → agt_7y — confirmed"       },
+  { c: "#ffb347", t: "contract:0x3a9f — audit complete"       },
+  { c: "#52b6ff", t: "nexum.io — identity verified"           },
+  { c: "#a78bfa", t: "pipeline_0098 — 14 steps — logged"      },
+  { c: "#00e5c0", t: "credit_0x4f2a — score: 781 — anchored"  },
+  { c: "#a78bfa", t: "blindaudit_007 — TEE confirmed — clean" },
+  { c: "#ffb347", t: "intent_0x9c1b — book NYC — executed"    },
 ];
 
-/* Code snippets that float in 3D inside the box */
 export const CODE_SNIPPETS = [
-  { text: "verify(agent_id)",       col: "#52b6ff" },
-  { text: "hash: 0x3a9f…d712",      col: "#00e5c0" },
-  { text: "trust_score: 94",        col: "#a78bfa" },
-  { text: "signed: true",           col: "#00e5c0" },
-  { text: "anchor(block, merkle)",  col: "#52b6ff" },
-  { text: "policy: EU_AI_ACT_52",   col: "#ffb347" },
-  { text: "operator: verified",     col: "#00e5c0" },
-  { text: "emit Registered(id)",    col: "#52b6ff" },
-  { text: "scan.entropy: 0.12",     col: "#a78bfa" },
-  { text: "ledger.append(event)",   col: "#52b6ff" },
-  { text: "contract: 0x4E71…e503",  col: "#ffb347" },
-  { text: "model: claude-sonnet-4", col: "#00e5c0" },
+  { text: "verify(agent_id)",        col: "#52b6ff" },
+  { text: "hash: 0x3a9f…d712",       col: "#00e5c0" },
+  { text: "trust_score: 94",         col: "#a78bfa" },
+  { text: "signed: true",            col: "#00e5c0" },
+  { text: "anchor(block, merkle)",   col: "#52b6ff" },
+  { text: "policy: EU_AI_ACT_52",    col: "#ffb347" },
+  { text: "operator: verified",      col: "#00e5c0" },
+  { text: "emit Registered(id)",     col: "#52b6ff" },
+  { text: "credit_score: 781",       col: "#00e5c0" },
+  { text: "tee: phala/sgx",          col: "#a78bfa" },
+  { text: "intent.approved: true",   col: "#ffb347" },
+  { text: "hedera.hcs: anchored",    col: "#52b6ff" },
+  { text: "chainlink.vrf: verified", col: "#ffb347" },
+  { text: "model: llama-3.1-8b",    col: "#a78bfa" },
+  { text: "ledger.append(event)",    col: "#52b6ff" },
+  { text: "zk_proof: valid",         col: "#00e5c0" },
 ];
+
+/* Mock on-chain proof records — shown in ProofPanel */
+export const MOCK_PROOFS = {
+  score: {
+    chain:        "hedera",
+    topicId:      "0.0.4891234",
+    sequenceNum:  "847",
+    inputHash:    "0x8f2a9c3d…b712e4f1",
+    outputHash:   "0x3a9f71c2…d408b3e9",
+    receiptCID:   "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
+    timestamp:    "2026-03-01T14:23:11Z",
+    explorerUrl:  "https://hashscan.io/testnet/topic/0.0.4891234",
+    modelVersion: "TrustCredit v2.1",
+    proofType:    "ZK-SNARK (Groth16)",
+  },
+  blindaudit: {
+    chain:           "avalanche",
+    txHash:          "0x7c3f9a2b4e1d8c6f…3a9f71c2",
+    blockNumber:     "29,847,123",
+    agentId:         "agt_sec_001",
+    inputHash:       "0x4f2a9c3d…e712b1f8",
+    attestationCID:  "bafybeihdwdcefgh4cqk6ghog7x7nkb4s5v3tpwtbk7fkslkmgxwnrsa4i",
+    timestamp:       "2026-03-01T14:31:44Z",
+    explorerUrl:     "https://testnet.snowtrace.io/tx/0x7c3f9a2b",
+    teeProvider:     "Phala Network (Intel SGX)",
+    scannerVersion:  "ShieldScan Pro v2.4.1",
+  },
+  execute: {
+    chain:          "both",
+    avaxTxHash:     "0x1a2b3c4d5e6f…9a8b7c6d",
+    hederaTopicId:  "0.0.4891237",
+    nlHash:         "0x9c1b4f2a…e712d408",
+    specHash:       "0x3d8c6f7a…b1f84e2c",
+    executionHash:  "0x7a3f9b2c…d1e84f6a",
+    chainlinkJobId: "0x4a2b3c1d…e7f89a0b",
+    timestamp:      "2026-03-01T14:41:07Z",
+    avaxExplorer:   "https://testnet.snowtrace.io/tx/0x1a2b3c4d",
+    hederaExplorer: "https://hashscan.io/testnet/topic/0.0.4891237",
+  },
+};
+
+/* Mock parsed intent specs — shown in IntentCard awaiting approval */
+export const MOCK_INTENT_PARSE = {
+  "Travel Booking": {
+    action:       "book_travel",
+    confidence:   0.97,
+    params: {
+      destination:   "New York City, USA",
+      check_in:      "2026-07-14",
+      check_out:     "2026-07-17",
+      max_price_usd: 400,
+      nights:        3,
+      guests:        1,
+      room_type:     "Standard",
+    },
+    verification:  "Chainlink Price Feed: USD/USD",
+    execution:     "IntentVault.sol → Booking API",
+    estimatedCost: "$1,200 total (3 × $400 max/night)",
+  },
+  "Portfolio Rebalance": {
+    action:       "rebalance_portfolio",
+    confidence:   0.94,
+    params: {
+      target_equity:  60,
+      target_bonds:   40,
+      current_equity: 71,
+      current_bonds:  29,
+      rebalance_mode: "sell-high-buy-low",
+      slippage_limit: "0.5%",
+    },
+    verification:  "Chainlink ETH/USD + BTC/USD Price Feeds",
+    execution:     "IntentVault.sol → DEX Router",
+    estimatedCost: "~0.003 AVAX gas",
+  },
+  "Contributor Tip": {
+    action:       "tip_contributors",
+    confidence:   0.99,
+    params: {
+      repository:  "github.com/user/repo",
+      top_n:       3,
+      amount_each: 10,
+      currency:    "USD",
+      metric:      "commits_30d",
+    },
+    verification:  "GitHub API via Chainlink Functions",
+    execution:     "IntentVault.sol → Multi-send Contract",
+    estimatedCost: "$30 + ~0.002 AVAX gas",
+  },
+};

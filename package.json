@@ -2,31 +2,18 @@
   "name": "trustbox",
   "version": "1.0.0",
   "private": true,
-  "description": "``` trustbox/ ├── index.html                   # HTML shell (Tailwind CDN) ├── package.json ├── vite.config.js └── src/     ├── main.jsx                 # React entry point     ├── App.jsx                  # Root router (landing ↔ dashboard)     │     ├── styles/     │   ├── global.css           # Reset · CSS vars · keyframes · .grid-bg     │   └── components.css       # .nav-link · .btn-p · .btn-g · .tb-input · .tb-label     │     ├── constants/     │   └── index.js             # All data: entity types, action meta, mock data, snippets     │     ├── components/     │   ├── LogoMark.jsx         # SVG logo mark     │   ├── Nav.jsx              # Fixed top navigation bar     │   ├── Ticker.jsx           # Live event ticker strip     │   ├── TrustBoxCanvas.jsx   # 3D wireframe box (canvas) + floating code lines + score     │   ├── AddEntityModal.jsx   # 2-step modal: pick type → fill form     │   └── ResultsDrawer.jsx    # Slide-in drawer: processing log → findings + score     │     └── pages/         ├── Landing.jsx          # Marketing page (hero, how it works, entity types, CTA)         └── Dashboard.jsx        # Dashboard (entity list + 3D box stage) ```",
-  "homepage": "https://github.com/TrustBoxx-AI/trustbox-frontend#readme",
-  "bugs": {
-    "url": "https://github.com/TrustBoxx-AI/trustbox-frontend/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/TrustBoxx-AI/trustbox-frontend.git"
-  },
-  "license": "ISC",
-  "author": "",
   "type": "module",
-  "main": "vite.config.js",
   "scripts": {
-    "postinstall": "chmod +x node_modules/.bin/* || true",
-    "dev": "vite",
-    "build": "npx vite build",
+    "dev":     "vite",
+    "build":   "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.3.1",
+    "react":     "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.2"
+    "vite":                 "^5.4.2"
   }
 }
