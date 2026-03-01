@@ -3,7 +3,7 @@
    Renders chain logo, hashes, CIDs, explorer links.
    ─────────────────────────────────────────────────────── */
 
-import { MOCK_PROOFS} from "../constants";
+import { MOCK_PROOFS } from "../constants/index";
 
 const avax  = { name:"Avalanche", network:"Fuji Testnet", icon:"▲", color:"#E84142" };
 const hbar  = { name:"Hedera",    network:"Testnet",      icon:"ℏ", color:"#8259EF" };

@@ -19,6 +19,15 @@
   border: none;
 }
 .nav-link:hover { color: #e8eaf0; }
+.nav-link.active { color: #e8eaf0; }
+
+/* ── Feature card hover (Landing) ──────────────────── */
+.feature-card {
+  transition: background .25s, border-color .25s, transform .25s;
+}
+.feature-card:hover {
+  transform: translateY(-2px);
+}
 
 /* ── Primary button ────────────────────────────────── */
 .btn-p {
@@ -72,7 +81,16 @@
   outline: none;
   transition: border-color .2s;
   appearance: none;
+  -webkit-appearance: none;
 }
+.tb-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.25)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  padding-right: 34px;
+  cursor: pointer;
+}
+.tb-select option { background: #0b0f1a; color: #e8eaf0; }
 .tb-input:focus,
 .tb-select:focus    { border-color: rgba(82, 182, 255, .45); }
 .tb-input::placeholder { color: rgba(255, 255, 255, .18); }
