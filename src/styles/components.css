@@ -1,0 +1,93 @@
+/* ══════════════════════════════════════════════════════
+   components.css  —  TrustBox
+   Shared UI component classes:
+   Nav · Buttons (.btn-p / .btn-g) · Form (.tb-input /
+   .tb-select / .tb-label) · Drawer scrollbar
+   ══════════════════════════════════════════════════════ */
+
+/* ── Nav link ──────────────────────────────────────── */
+.nav-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .35);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color .2s;
+  background: transparent;
+  border: none;
+}
+.nav-link:hover { color: #e8eaf0; }
+
+/* ── Primary button ────────────────────────────────── */
+.btn-p {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #06080f;
+  background: var(--c-blue);
+  padding: 11px 26px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background .2s, box-shadow .2s;
+  white-space: nowrap;
+}
+.btn-p:hover    { background: #7eceff; box-shadow: 0 0 28px rgba(82, 182, 255, .4); }
+.btn-p:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── Ghost button ──────────────────────────────────── */
+.btn-g {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .35);
+  background: transparent;
+  padding: 11px 26px;
+  border: 1px solid rgba(255, 255, 255, .07);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: border-color .2s, color .2s;
+}
+.btn-g:hover { border-color: rgba(82, 182, 255, .4); color: #e8eaf0; }
+
+/* ── Form inputs & selects ─────────────────────────── */
+.tb-input,
+.tb-select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid rgba(255, 255, 255, .07);
+  color: #e8eaf0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  padding: 10px 13px;
+  outline: none;
+  transition: border-color .2s;
+  appearance: none;
+}
+.tb-input:focus,
+.tb-select:focus    { border-color: rgba(82, 182, 255, .45); }
+.tb-input::placeholder { color: rgba(255, 255, 255, .18); }
+
+/* ── Form label ────────────────────────────────────── */
+.tb-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .3);
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* ── Drawer inner scrollbar ────────────────────────── */
+.drawer-scroll::-webkit-scrollbar       { width: 2px; }
+.drawer-scroll::-webkit-scrollbar-thumb { background: rgba(82, 182, 255, .2); }
