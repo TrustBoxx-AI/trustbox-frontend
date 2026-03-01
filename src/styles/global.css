@@ -1,0 +1,77 @@
+/* ══════════════════════════════════════════════════════
+   global.css  —  TrustBox
+   Reset · CSS custom properties · keyframes · grid bg
+   ══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Serif:ital,wght@0,300;1,300&display=swap');
+
+/* ── Design tokens ─────────────────────────────────── */
+:root {
+  --c-blue:   #52b6ff;
+  --c-teal:   #00e5c0;
+  --c-amber:  #ffb347;
+  --c-pink:   #ff6eb4;
+  --c-purple: #a78bfa;
+  --c-red:    #ff4d6a;
+  --bg:       #06080f;
+  --bg2:      #0b0f1a;
+  --bg3:      #0f1420;
+  --border:   rgba(255, 255, 255, 0.06);
+}
+
+/* ── Box reset ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root      { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: #e8eaf0;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 300;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Thin scrollbar ────────────────────────────────── */
+::-webkit-scrollbar       { width: 3px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(82, 182, 255, 0.25); }
+
+/* ── Grid overlay (applied via .grid-bg on a wrapper) ─ */
+.grid-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ── Keyframes ─────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes blink     { 50% { opacity: 0; } }
+@keyframes ticker    { from { transform: translateX(0); }    to { transform: translateX(-50%); } }
+@keyframes pulseDot  { 0%, 100% { opacity: 1; }             50% { opacity: .15; } }
+@keyframes spinCW    { from { transform: rotate(0deg); }    to { transform: rotate(360deg); } }
+@keyframes spinCCW   { from { transform: rotate(0deg); }    to { transform: rotate(-360deg); } }
+@keyframes drawerIn  { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes overlayIn { from { opacity: 0; }                  to { opacity: 1; } }
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes resultIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes scoreArc { from { stroke-dasharray: 0 151; } }
