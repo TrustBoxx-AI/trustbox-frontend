@@ -46,7 +46,17 @@ export default function TrustBoxCanvas({ boxState, processingAction, score, enti
 
   /* update spin target when boxState changes */
   useEffect(() => {
-    const targets = { idle: 0, opening: 0, open: 0, closing: 0, spinning: .016, processing: .034, scored: .016 };
+    const targets = {
+      idle: 0, opening: 0, open: 0, closing: 0,
+      spinning: .016,
+      parsing: .028,
+      "awaiting-approval": .008,
+      processing: .034,
+      executing: .042,
+      anchoring: .022,
+      scored: .016,
+      proved: .012,
+    };
     S.targetSpeed = targets[boxState] ?? 0;
   }, [boxState]);
 
@@ -91,14 +101,17 @@ export default function TrustBoxCanvas({ boxState, processingAction, score, enti
       /* ease lid */
       if (boxState === "opening") {
         S.lidT = Math.min(S.lidT + .022, 1);
-      } else if (["closing","spinning","processing","scored"].includes(boxState)) {
+      } else if (boxState === "awaiting-approval") {
+        /* half-open — lid holds at 50% */
+        S.lidT = S.lidT < .5 ? Math.min(S.lidT + .018, .5) : Math.max(S.lidT - .018, .5);
+      } else if (["closing","spinning","processing","scored","executing","anchoring","proved","parsing"].includes(boxState)) {
         S.lidT = Math.max(S.lidT - .028, 0);
       }
 
       /* score alpha — resets when score is null, ramps up when scored */
       if (score == null) {
         S.scoreAlpha = 0;
-      } else if (boxState === "scored" || S.scoreAlpha >= 0.01) {
+      } else if (["scored","proved"].includes(boxState) || S.scoreAlpha >= 0.01) {
         S.scoreAlpha = Math.min(S.scoreAlpha + .04, 1);
       }
 
@@ -108,8 +121,11 @@ export default function TrustBoxCanvas({ boxState, processingAction, score, enti
       const col = accentColor;
 
       /* ── background glow ─────────────────────────── */
-      const glowA = boxState === "processing" ? .1 + S.glowPulse * .09
-                  : boxState === "scored"     ? .08 + S.glowPulse * .05
+      const glowA = ["processing","executing"].includes(boxState)    ? .1  + S.glowPulse * .09
+                  : boxState === "anchoring"                              ? .12 + S.glowPulse * .12
+                  : boxState === "parsing"                                ? .07 + S.glowPulse * .06
+                  : boxState === "awaiting-approval"                     ? .06 + S.glowPulse * .08
+                  : ["scored","proved"].includes(boxState)              ? .08 + S.glowPulse * .05
                   : .03 + S.glowPulse * .015;
       const gg = ctx.createRadialGradient(cx,cy,0,cx,cy,SZ*1.9);
       gg.addColorStop(0, col + hex2(glowA*255));
@@ -208,7 +224,7 @@ export default function TrustBoxCanvas({ boxState, processingAction, score, enti
       }
 
       /* ── processing orbit ring ──────────────────── */
-      if (boxState === "processing") {
+      if (["processing","executing","anchoring"].includes(boxState)) {
         const rr   = SZ * 1.52;
         const prog = (frame % 100) / 100;
         ctx.beginPath(); ctx.arc(cx,cy,rr,-Math.PI/2,-Math.PI/2+prog*Math.PI*2);
@@ -239,6 +255,33 @@ export default function TrustBoxCanvas({ boxState, processingAction, score, enti
         ctx.fillText(String(score), fc[0], fc[1]);
       }
 
+      /* ── proved checkmark ring ─────────────────────────── */
+      if (boxState === "proved" && S.scoreAlpha > .5) {
+        const fc = proj(rotY(rotX([0,0,SZ], S.angleX), S.angleY));
+        const rr = 38 * fc[2];
+        ctx.beginPath(); ctx.arc(fc[0],fc[1],rr,0,Math.PI*2);
+        ctx.strokeStyle = "#00e5c0" + hex2(S.scoreAlpha * .6 * 255);
+        ctx.lineWidth = 1; ctx.stroke();
+      }
+
+      /* ── parsing lines rearrange into columns ──────────── */
+      if (boxState === "parsing") {
+        const t = (frame % 60) / 60;
+        const fc = proj(rotY(rotX([0,0,SZ], S.angleX), S.angleY));
+        ctx.save();
+        ctx.globalAlpha = Math.min(t * 2, .55);
+        for (let r = 0; r < 4; r++) {
+          const y = fc[1] - 24 + r * 14;
+          const w = 40 + Math.sin(frame * .1 + r) * 15;
+          ctx.beginPath();
+          ctx.moveTo(fc[0] - 28, y);
+          ctx.lineTo(fc[0] - 28 + w, y);
+          ctx.strokeStyle = "#ffb347";
+          ctx.lineWidth = 1.5; ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       rafRef.current = requestAnimationFrame(draw);
     };
 
@@ -250,7 +293,7 @@ export default function TrustBoxCanvas({ boxState, processingAction, score, enti
     <canvas
       ref={canvasRef}
       className="block"
-      style={{ filter: boxState === "processing" ? "brightness(1.18)" : "brightness(1)", transition: "filter .5s" }}
+      style={{ filter: ["processing","executing","anchoring"].includes(boxState) ? "brightness(1.18)" : boxState === "proved" ? "brightness(1.1)" : "brightness(1)", transition: "filter .5s" }}
     />
   );
 }
