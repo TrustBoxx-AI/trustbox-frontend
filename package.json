@@ -16,8 +16,9 @@
   "type": "module",
   "main": "vite.config.js",
   "scripts": {
+    "postinstall": "chmod +x node_modules/.bin/* || true",
     "dev": "vite",
-    "build": "vite build",
+    "build": "npx vite build",
     "preview": "vite preview"
   },
   "dependencies": {
