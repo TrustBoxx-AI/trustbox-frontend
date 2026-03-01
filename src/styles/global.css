@@ -74,4 +74,8 @@ body {
   from { opacity: 0; transform: translateX(8px); }
   to   { opacity: 1; transform: none; }
 }
-@keyframes scoreArc { from { stroke-dasharray: 0 151; } }
+@keyframes scoreArc  { from { stroke-dasharray: 0 999; } }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
