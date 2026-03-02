@@ -10,7 +10,7 @@ import { ACCENT_HEX } from "../constants";
 
 const ALL_CAPS = [...new Set(SEED_AGENTS.flatMap(a => a.capabilities))].sort();
 
-export default function Marketplace() {
+export default function Marketplace({ setRoute }) {
   const [filter,       setFilter]       = useState("all");  /* capability filter */
   const [selected,     setSelected]     = useState(null);
   const [showRegister, setShowRegister] = useState(false);
@@ -43,12 +43,20 @@ export default function Marketplace() {
               Every agent runs inside a Phala Network TEE (Intel SGX). Your code is encrypted before upload — agents perform blind computation and prove it via on-chain attestation.
             </p>
           </div>
-          <button
-            onClick={() => setShowRegister(true)}
-            className="btn-p shrink-0"
-            style={{ background:"#a78bfa", color:"#06080f" }}>
-            + Register Agent
-          </button>
+          <div className="flex gap-3 shrink-0">
+            <button
+              onClick={() => setRoute?.("dashboard")}
+              className="btn-g"
+              style={{ fontSize:11, padding:"9px 16px" }}>
+              ← Dashboard
+            </button>
+            <button
+              onClick={() => setShowRegister(true)}
+              className="btn-p"
+              style={{ background:"#a78bfa", color:"#06080f" }}>
+              + Register Agent
+            </button>
+          </div>
         </div>
 
         {/* stats strip */}
@@ -129,7 +137,8 @@ export default function Marketplace() {
               <button onClick={() => setSelected(null)} className="btn-g" style={{ fontSize:11, padding:"8px 16px" }}>
                 Deselect
               </button>
-              <button className="btn-p" style={{ fontSize:11, padding:"8px 20px", background:"#a78bfa", color:"#06080f" }}>
+              <button className="btn-p" style={{ fontSize:11, padding:"8px 20px", background:"#a78bfa", color:"#06080f" }}
+                      onClick={() => setRoute?.("dashboard")}>
                 Use This Agent →
               </button>
             </div>

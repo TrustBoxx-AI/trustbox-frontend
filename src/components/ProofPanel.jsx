@@ -3,7 +3,7 @@
    Renders chain logo, hashes, CIDs, explorer links.
    ─────────────────────────────────────────────────────── */
 
-import { MOCK_PROOFS } from "../constants/index";
+import { MOCK_PROOFS } from "../constants";
 
 const avax  = { name:"Avalanche", network:"Fuji Testnet", icon:"▲", color:"#E84142" };
 const hbar  = { name:"Hedera",    network:"Testnet",      icon:"ℏ", color:"#8259EF" };
@@ -31,6 +31,12 @@ export default function ProofPanel({ action }) {
         )}
         {action === "execute" && (
           <ChainBadge {...clink}/>
+        )}
+        {action === "verify" && (
+          <ChainBadge icon="⬡" name="ERC-8004" network="Agent Credential NFT" color="#52b6ff"/>
+        )}
+        {action === "audit" && (
+          <ChainBadge icon="📋" name="AuditRegistry.sol" network="On-Chain Anchor" color="#ffb347"/>
         )}
       </div>
 
@@ -79,16 +85,52 @@ export default function ProofPanel({ action }) {
         {proof.attestationCID && (
           <HashRow label="Attestation CID" value={proof.attestationCID} color="#a78bfa" mono truncate/>
         )}
+        {/* ERC-8004 verify specific */}
+        {proof.tokenId && (
+          <HashRow label="ERC-8004 Token ID"  value={`#${proof.tokenId}`}          color="#52b6ff"/>
+        )}
+        {proof.contractAddr && (
+          <HashRow label="Token Contract"     value={proof.contractAddr}            color="#52b6ff"/>
+        )}
+        {proof.mintTxHash && (
+          <HashRow label="Mint Tx Hash"       value={proof.mintTxHash}              color="#00e5c0"/>
+        )}
+        {proof.metadataURI && (
+          <HashRow label="Metadata URI"       value={proof.metadataURI}             color="#a78bfa"/>
+        )}
+        {proof.standard && (
+          <HashRow label="Standard"           value={proof.standard}               color="rgba(255,255,255,.4)"/>
+        )}
+        {/* audit specific */}
+        {proof.auditedContract && (
+          <HashRow label="Audited Contract"   value={proof.auditedContract}         color="#ffb347"/>
+        )}
+        {proof.reportCID && (
+          <HashRow label="Report CID"         value={proof.reportCID}              color="#a78bfa"/>
+        )}
+        {proof.reportHash && (
+          <HashRow label="Report Hash"        value={proof.reportHash}             color="#52b6ff"/>
+        )}
+        {proof.merkleRoot && (
+          <HashRow label="Merkle Root"        value={proof.merkleRoot}             color="#52b6ff"/>
+        )}
+        {proof.gasUsed && (
+          <HashRow label="Gas Used"           value={proof.gasUsed}               color="rgba(255,255,255,.35)"/>
+        )}
       </div>
 
       {/* metadata row */}
       <div className="flex flex-wrap gap-4 mb-5 p-3.5 border border-white/[0.05]">
-        {proof.modelVersion && <MetaItem label="Model"   value={proof.modelVersion}/>}
-        {proof.proofType    && <MetaItem label="Proof"   value={proof.proofType}/>}
-        {proof.teeProvider  && <MetaItem label="TEE"     value={proof.teeProvider}/>}
+        {proof.modelVersion  && <MetaItem label="Model"    value={proof.modelVersion}/>}
+        {proof.proofType     && <MetaItem label="Proof"    value={proof.proofType}/>}
+        {proof.teeProvider   && <MetaItem label="TEE"      value={proof.teeProvider}/>}
         {proof.scannerVersion && <MetaItem label="Scanner" value={proof.scannerVersion}/>}
-        {proof.agentId      && <MetaItem label="Agent"   value={proof.agentId}/>}
-        <MetaItem label="Timestamp" value={new Date(proof.timestamp).toLocaleString()}/>
+        {proof.agentId       && <MetaItem label="Agent"    value={proof.agentId}/>}
+        {proof.issuer        && <MetaItem label="Issuer"   value={proof.issuer}/>}
+        {proof.agentScore    && <MetaItem label="Score"    value={`${proof.agentScore}/100`}/>}
+        {(proof.timestamp || proof.mintedAt || proof.auditedAt) && (
+          <MetaItem label="Timestamp" value={new Date(proof.timestamp || proof.mintedAt || proof.auditedAt).toLocaleString()}/>
+        )}
       </div>
 
       {/* explorer links */}
@@ -107,6 +149,26 @@ export default function ProofPanel({ action }) {
             label="View on IPFS"
             url={`https://ipfs.io/ipfs/${proof.receiptCID || proof.attestationCID}`}
             color="#00e5c0"
+          />
+        )}
+        {proof.tokenExplorer && (
+          <ExplorerLink label="View ERC-8004 Token" url={proof.tokenExplorer} color="#52b6ff"/>
+        )}
+        {proof.registryUrl && (
+          <ExplorerLink label="AuditRegistry Contract" url={proof.registryUrl} color="#ffb347"/>
+        )}
+        {proof.reportCID && (
+          <ExplorerLink
+            label="View Audit Report (IPFS)"
+            url={`https://ipfs.io/ipfs/${proof.reportCID}`}
+            color="#a78bfa"
+          />
+        )}
+        {proof.metadataURI && (
+          <ExplorerLink
+            label="View Agent Metadata (IPFS)"
+            url={`https://ipfs.io/${proof.metadataURI.replace("ipfs://","ipfs/")}`}
+            color="#a78bfa"
           />
         )}
       </div>

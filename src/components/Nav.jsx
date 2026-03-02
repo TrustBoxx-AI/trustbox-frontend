@@ -39,9 +39,8 @@ export default function Nav({ route, setRoute }) {
         ].map(([label, r]) => (
           <li key={label}>
             <button
-              className="nav-link"
+              className={"nav-link" + (route === r ? " active" : "")}
               onClick={() => setRoute(r)}
-              style={{ color: route === r ? "#e8eaf0" : undefined }}
             >
               {label === "Marketplace" && (
                 <span style={{ color: "#a78bfa", marginRight: 4 }}>⚿</span>

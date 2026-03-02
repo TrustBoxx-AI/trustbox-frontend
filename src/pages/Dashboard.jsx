@@ -119,10 +119,18 @@ export default function Dashboard() {
   /* ── Scoring / proof callbacks ───────────────────────── */
   const handleScored = score => {
     setBoxScore(score);
-    if (drawer?.action === "score" || drawer?.action === "blindaudit" || drawer?.action === "execute") {
+    const action = drawer?.action;
+    if (action === "execute") {
+      /* intent: processing → executing → anchoring → proved */
+      setBoxState("executing");
+      setTimeout(() => setBoxState("anchoring"), 1200);
+      setTimeout(() => setBoxState("proved"),    2600);
+    } else if (["score","blindaudit","verify","audit"].includes(action)) {
+      /* chain-anchored: processing → anchoring → proved */
       setBoxState("anchoring");
       setTimeout(() => setBoxState("proved"), 1400);
     } else {
+      /* standard: processing → scored */
       setTimeout(() => setBoxState("scored"), 350);
     }
   };
@@ -136,7 +144,11 @@ export default function Dashboard() {
   const boxStateLabel = () => {
     if (boxState === "processing") return drawer ? `${ACTION_META[drawer.action]?.label}…` : "Processing…";
     if (boxState === "scored")     return `Score: ${boxScore}/100`;
-    if (boxState === "proved")     return `Proved: ${boxScore ?? "✓"}`;
+    if (boxState === "proved") {
+      if (drawer?.action === "verify") return "ERC-8004 Minted ✓";
+      if (drawer?.action === "audit")  return `Audit Anchored ✓`;
+      return `Proved: ${boxScore ?? "✓"}`;
+    }
     return STATE_LABEL[boxState] || boxState;
   };
 
@@ -145,7 +157,11 @@ export default function Dashboard() {
     if (boxState === "idle")             return "rgba(255,255,255,.18)";
     if (boxState === "processing")       return ACTION_META[drawer?.action || "scan"]?.color;
     if (boxState === "scored")           return "#52b6ff";
-    if (boxState === "proved")           return "#00e5c0";
+    if (boxState === "proved") {
+      if (drawer?.action === "verify") return "#52b6ff";
+      if (drawer?.action === "audit")  return "#ffb347";
+      return "#00e5c0";
+    }
     if (boxState === "parsing")          return "#ffb347";
     if (boxState === "awaiting-approval")return "#ffb347";
     if (boxState === "executing")        return "#E84142";
@@ -192,15 +208,48 @@ export default function Dashboard() {
         {/* ── LEFT: entity list ── */}
         <div className="border-r border-white/[0.055] overflow-y-auto">
           {entities.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-24 opacity-40">
-              <div className="text-5xl mb-5 select-none"
-                   style={{ fontFamily:"'IBM Plex Mono',monospace", color:"rgba(255,255,255,.08)" }}>[ ]</div>
-              <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".18em", textTransform:"uppercase", color:"rgba(255,255,255,.2)", marginBottom:8 }}>
+            <div className="flex flex-col items-center justify-center h-full text-center py-20 px-12">
+              {/* Box icon */}
+              <div className="mb-8 relative">
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none" style={{ opacity:.12 }}>
+                  <rect x="8" y="22" width="56" height="42" stroke="#52b6ff" strokeWidth="1.2"/>
+                  <path d="M8 22 L36 8 L64 22" stroke="#52b6ff" strokeWidth="1.2"/>
+                  <line x1="36" y1="8" x2="36" y2="22" stroke="#52b6ff" strokeWidth="1"/>
+                  <line x1="8" y1="22" x2="64" y2="22" stroke="#52b6ff" strokeWidth="1"/>
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center"
+                     style={{ paddingTop:18 }}>
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:"rgba(82,182,255,.2)" }}>[ ]</span>
+                </div>
+              </div>
+
+              <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".2em", textTransform:"uppercase", color:"rgba(255,255,255,.18)", marginBottom:12 }}>
                 The Box is empty
+              </p>
+              <p style={{ fontSize:13, color:"rgba(255,255,255,.2)", lineHeight:1.7, maxWidth:320, marginBottom:24 }}>
+                Add an AI agent, credit profile, code bundle, or intent command to get started.
+              </p>
+
+              {/* Quick-start chips */}
+              <div className="flex flex-wrap gap-2 justify-center mb-8">
+                {[
+                  { label:"◉ Credit Score",         color:"#00e5c0" },
+                  { label:"⚿ Security Audit",        color:"#a78bfa" },
+                  { label:"⟡ Verifiable Intent",    color:"#ffb347" },
+                  { label:"◈ AI Agent",              color:"#52b6ff" },
+                ].map(c => (
+                  <div key={c.label}
+                       style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".1em",
+                                color:c.color, border:"1px solid "+c.color+"33", padding:"4px 10px",
+                                opacity:.55 }}>
+                    {c.label}
+                  </div>
+                ))}
               </div>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,.18)" }}>
-                Click "Add to the Box" to register your first AI entity.
-              </div>
+
+              <button className="btn-p" onClick={handleAddClick}>
+                + Add to the Box
+              </button>
             </div>
           ) : (
             <>
@@ -233,6 +282,15 @@ export default function Dashboard() {
                           <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, letterSpacing:".08em",
                                          color:entity.typeMeta.badgeColor, border:`1px solid ${entity.typeMeta.badgeColor}44`, padding:"1px 5px" }}>
                             {entity.typeMeta.badge}
+                          </span>
+                        )}
+                        {entity.typeMeta.chainTarget && (
+                          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7,
+                                         color:"rgba(255,255,255,.2)" }}>
+                            {entity.typeMeta.chainTarget === "both"     ? "▲ + ℏ"
+                           : entity.typeMeta.chainTarget === "hedera"   ? "ℏ"
+                           : entity.typeMeta.chainTarget === "avalanche" ? "▲"
+                           : null}
                           </span>
                         )}
                       </div>
@@ -305,17 +363,29 @@ export default function Dashboard() {
 
           {/* chain indicators for proved state */}
           {(boxState === "proved" || boxState === "anchoring") && (
-            <div className="flex gap-2">
-              {(drawer?.action === "score") && (
-                <ChainPill icon="ℏ" label="Hedera HCS" color="#8259EF"/>
-              )}
-              {(drawer?.action === "blindaudit") && (
-                <ChainPill icon="▲" label="Avalanche" color="#E84142"/>
-              )}
-              {(drawer?.action === "execute") && (
+            <div className="flex gap-2 flex-wrap justify-center">
+              {drawer?.action === "verify" && (
                 <>
                   <ChainPill icon="▲" label="Avalanche" color="#E84142"/>
-                  <ChainPill icon="ℏ" label="Hedera" color="#8259EF"/>
+                  <ChainPill icon="⬡" label="ERC-8004"  color="#52b6ff"/>
+                </>
+              )}
+              {drawer?.action === "audit" && (
+                <>
+                  <ChainPill icon="▲" label="Avalanche"      color="#E84142"/>
+                  <ChainPill icon="📋" label="AuditRegistry" color="#ffb347"/>
+                </>
+              )}
+              {drawer?.action === "score" && (
+                <ChainPill icon="ℏ" label="Hedera HCS" color="#8259EF"/>
+              )}
+              {drawer?.action === "blindaudit" && (
+                <ChainPill icon="▲" label="Avalanche" color="#E84142"/>
+              )}
+              {drawer?.action === "execute" && (
+                <>
+                  <ChainPill icon="▲" label="Avalanche" color="#E84142"/>
+                  <ChainPill icon="ℏ" label="Hedera"    color="#8259EF"/>
                   <ChainPill icon="⬡" label="Chainlink" color="#375BD2"/>
                 </>
               )}
@@ -354,8 +424,8 @@ export default function Dashboard() {
                       {selected.typeMeta.actionIcon} {selected.typeMeta.actionLabel}
                     </div>
                     <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:"rgba(255,255,255,.25)" }}>
-                      { selected.typeMeta.action === "verify"     && "Confirm identity & credentials"            }
-                      { selected.typeMeta.action === "audit"      && "Smart contract audit trail"                }
+                      { selected.typeMeta.action === "verify"     && "Mint ERC-8004 credential NFT on Avalanche" }
+                      { selected.typeMeta.action === "audit"      && "Anchor report to AuditRegistry.sol"        }
                       { selected.typeMeta.action === "scan"       && "Behavioural & security scan"               }
                       { selected.typeMeta.action === "score"      && "AI credit score — ZK proven on Hedera"     }
                       { selected.typeMeta.action === "blindaudit" && "Blind TEE audit — attested on Avalanche"   }
