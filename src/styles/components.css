@@ -18,8 +18,19 @@
   background: transparent;
   border: none;
 }
-.nav-link:hover { color: #e8eaf0; }
-.nav-link.active { color: #e8eaf0; }
+.nav-link:hover  { color: #e8eaf0; }
+.nav-link.active {
+  color: #e8eaf0;
+  position: relative;
+}
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0; right: 0;
+  height: 1px;
+  background: #52b6ff;
+}
 
 /* ── Feature card hover (Landing) ──────────────────── */
 .feature-card {
@@ -27,6 +38,34 @@
 }
 .feature-card:hover {
   transform: translateY(-2px);
+}
+
+/* ── Feature body grid — 3-col on desktop, 1-col on mobile ── */
+.feature-body-grid {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+@media (max-width: 900px) {
+  .feature-body-grid {
+    grid-template-columns: 1fr;
+  }
+  .feature-body-grid > div.border-l {
+    border-left: none;
+    border-top: 1px solid rgba(255,255,255,0.055);
+    padding-left: 0;
+    padding-top: 20px;
+  }
+}
+
+/* ── Mobile nav collapse ────────────────────────────── */
+@media (max-width: 680px) {
+  nav ul { display: none; }
+  .hero-stats { flex-direction: column; gap: 16px; }
+}
+
+/* ── Landing hero padding on mobile ────────────────── */
+@media (max-width: 640px) {
+  section { padding-left: 24px !important; padding-right: 24px !important; }
+  .grid.feature-body-grid { padding-left: 24px; padding-right: 24px; }
 }
 
 /* ── Primary button ────────────────────────────────── */

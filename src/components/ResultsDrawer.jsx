@@ -10,12 +10,12 @@
 import { useState, useEffect } from "react";
 import {
   ACTION_META, ACTION_SCORE, LOG_LINES, MOCK_FINDINGS,
-  STATUS_COLOR, STATUS_ICON, MOCK_INTENT_PARSE,
+  STATUS_COLOR, STATUS_ICON, MOCK_INTENT_PARSE, MOCK_PROOFS,
 } from "../constants";
 import IntentCard from "./IntentCard";
 import ProofPanel from "./ProofPanel";
 
-const HAS_PROOF = ["score","blindaudit","execute"];
+const HAS_PROOF = ["verify","audit","score","blindaudit","execute"];
 
 export default function ResultsDrawer({ action, entityLabel, entityData, onClose, onScored }) {
   /* For intent: start at review, others go straight to processing */
@@ -40,9 +40,9 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
         i++;
       } else {
         clearInterval(iv);
-        setTimeout(() => { setPhase("done"); if (score) onScored?.(score); }, 500);
+        setTimeout(() => { setPhase("done"); onScored?.(score); }, 500);
       }
-    }, action === "score" || action === "blindaudit" ? 380 : 430);
+    }, ["score","blindaudit","verify","audit"].includes(action) ? 320 : 430);
     return () => clearInterval(iv);
   }, [phase, action]);
 
@@ -81,6 +81,8 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
                 {meta.label}
               </span>
               {/* chain badge */}
+              {action === "verify"     && <><ChainPill icon="▲" label="Avalanche" color="#E84142"/><ChainPill icon="⬡" label="ERC-8004" color="#52b6ff"/></>}
+              {action === "audit"      && <><ChainPill icon="▲" label="Avalanche" color="#E84142"/><ChainPill icon="📋" label="AuditRegistry" color="#ffb347"/></>}
               {action === "score"      && <ChainPill icon="ℏ" label="Hedera"    color="#8259EF"/>}
               {action === "blindaudit" && <ChainPill icon="▲" label="Avalanche" color="#E84142"/>}
               {action === "execute"    && <><ChainPill icon="▲" label="Avalanche" color="#E84142"/><ChainPill icon="ℏ" label="Hedera" color="#8259EF"/></>}
@@ -151,13 +153,11 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
             <div style={{ animation:"fadeUp .4s ease" }}>
 
               {/* ── Score / execution card ── */}
-              {action === "score" ? (
-                <CreditScoreCard score={score} meta={meta}/>
-              ) : action === "execute" ? (
-                <ExecutionCard meta={meta}/>
-              ) : (
-                <StandardScoreCard score={score} action={action} meta={meta}/>
-              )}
+              {action === "score"      ? <CreditScoreCard score={score} meta={meta}/>     :
+               action === "execute"    ? <ExecutionCard meta={meta}/>                    :
+               action === "verify"     ? <ERC8004Card score={score} meta={meta}/>        :
+               action === "audit"      ? <AuditTxCard score={score} meta={meta} entityData={entityData}/> :
+                                         <StandardScoreCard score={score} action={action} meta={meta}/>}
 
               {/* ── Tab bar (if has proof) ── */}
               {HAS_PROOF.includes(action) && (
@@ -197,13 +197,7 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
                     ))}
                   </div>
 
-                  {/* audit-only: contract address */}
-                  {action === "audit" && (
-                    <div className="p-3.5 border mb-5" style={{ borderColor:"#ffb34733", background:"rgba(255,179,71,.04)" }}>
-                      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".16em", textTransform:"uppercase", color:"#ffb347", marginBottom:6 }}>Smart Contract Address</div>
-                      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:"#e8eaf0" }}>0x4E71A2E537B7f9D9413D3991D37958c0b5e1e503</div>
-                    </div>
-                  )}
+
 
                   <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:"rgba(255,255,255,.18)", borderTop:"1px solid rgba(255,255,255,.05)", paddingTop:14, marginBottom:20 }}>
                     {new Date().toISOString()} · TrustBox Ledger v2.1
@@ -341,6 +335,193 @@ function ExecutionCard({ meta }) {
       <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.18)", marginTop:4 }}>
         Intent hash matches approved spec hash matches execution hash — zero deviation.
       </div>
+    </div>
+  );
+}
+
+/* ── ERC-8004 Agent Credential Card ───────────────── */
+function ERC8004Card({ score, meta }) {
+  const proof = MOCK_PROOFS.verify;
+  return (
+    <div className="mb-5 border overflow-hidden" style={{ borderColor:"#52b6ff33" }}>
+
+      {/* Token header */}
+      <div className="px-5 py-4 border-b flex items-center gap-4"
+           style={{ borderColor:"#52b6ff18", background:"#52b6ff06" }}>
+        <div className="w-12 h-12 flex items-center justify-center shrink-0 border text-lg"
+             style={{ borderColor:"#52b6ff44", color:"#52b6ff", fontFamily:"'IBM Plex Mono',monospace" }}>
+          ◈
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".12em",
+                           textTransform:"uppercase", color:"#52b6ff" }}>ERC-8004</span>
+            <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, letterSpacing:".1em",
+                           color:"#00e5c0", border:"1px solid #00e5c044", padding:"1px 5px" }}>MINTED</span>
+          </div>
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:"#e8eaf0" }}>
+            Agent Credential NFT #{proof.tokenId}
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.2)", marginBottom:3 }}>TRUST SCORE</div>
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:22, fontWeight:500, color:"#52b6ff" }}>
+            {score}<span style={{ fontSize:11, color:"rgba(255,255,255,.2)" }}>/100</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Token details */}
+      <div className="p-5 flex flex-col gap-2">
+        <ERC8004Row label="Token Standard" value="ERC-8004 (AI Agent Credential)" color="#52b6ff"/>
+        <ERC8004Row label="Token ID"       value={`#${proof.tokenId}`}             color="#52b6ff"/>
+        <ERC8004Row label="Contract"       value={proof.contractAddr.slice(0,20)+"…"} color="#e8eaf0"
+                    link={`https://testnet.snowtrace.io/token/${proof.contractAddr}`}/>
+        <ERC8004Row label="Mint Tx"        value={proof.mintTxHash}                color="#00e5c0"
+                    link={proof.explorerUrl}/>
+        <ERC8004Row label="Block"          value={`#${proof.blockNumber}`}         color="rgba(255,255,255,.4)"/>
+        <ERC8004Row label="Gas Used"       value={proof.gasUsed}                   color="rgba(255,255,255,.4)"/>
+        <ERC8004Row label="Metadata URI"   value={proof.metadataURI.slice(0,28)+"…"} color="#a78bfa"/>
+        <ERC8004Row label="Issuer"         value={proof.issuer}                    color="rgba(255,255,255,.35)"/>
+        <ERC8004Row label="Minted"         value={proof.mintedAt.replace("T"," ").replace("Z"," UTC")} color="rgba(255,255,255,.3)"/>
+      </div>
+
+      {/* What this means */}
+      <div className="px-5 pb-5">
+        <div className="p-3 border border-[#52b6ff18] bg-[#52b6ff06]">
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".14em",
+                        textTransform:"uppercase", color:"#52b6ff", marginBottom:6 }}>
+            ⬡ What this means
+          </div>
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:"rgba(255,255,255,.4)", lineHeight:1.8 }}>
+            This agent now carries a verifiable on-chain identity. Anyone can call{" "}
+            <span style={{ color:"#52b6ff" }}>verifyAgent({proof.tokenId})</span> on TrustRegistry.sol
+            to confirm this agent's credentials without trusting TrustBox.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.18)",
+                    paddingInline:20, paddingBottom:14 }}>
+        ▲ Avalanche Fuji · ERC-8004 · TrustRegistry.sol
+      </div>
+    </div>
+  );
+}
+
+function ERC8004Row({ label, value, color, link }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-3 py-2 border border-white/[0.04]"
+         style={{ background:"rgba(255,255,255,.015)" }}>
+      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".1em",
+                     textTransform:"uppercase", color:"rgba(255,255,255,.28)", flexShrink:0 }}>
+        {label}
+      </span>
+      {link ? (
+        <a href={link} target="_blank" rel="noreferrer"
+           style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color, textDecoration:"underline",
+                    textDecorationColor:color+"55", maxWidth:200, wordBreak:"break-all" }}>
+          {value}
+        </a>
+      ) : (
+        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color,
+                       maxWidth:200, wordBreak:"break-all", textAlign:"right" }}>
+          {value}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ── Audit Anchor Transaction Card ─────────────────── */
+function AuditTxCard({ score, meta, entityData }) {
+  const proof = MOCK_PROOFS.audit;
+  const contractAddr = entityData?.["Contract Address"] || proof.auditedContract;
+  return (
+    <div className="mb-5 border overflow-hidden" style={{ borderColor:"#ffb34733" }}>
+
+      {/* Tx header */}
+      <div className="px-5 py-4 border-b flex items-center gap-4 flex-wrap"
+           style={{ borderColor:"#ffb34718", background:"#ffb34706" }}>
+        <div className="w-12 h-12 flex items-center justify-center shrink-0 border text-lg"
+             style={{ borderColor:"#ffb34744", color:"#ffb347", fontFamily:"'IBM Plex Mono',monospace" }}>
+          ⬡
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".12em",
+                           textTransform:"uppercase", color:"#ffb347" }}>On-Chain Tx</span>
+            <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, letterSpacing:".1em",
+                           color:"#00e5c0", border:"1px solid #00e5c044", padding:"1px 5px" }}>CONFIRMED</span>
+          </div>
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:"#e8eaf0" }}>
+            AuditRegistry.sol
+          </div>
+        </div>
+        <div className="text-right shrink-0">
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.2)", marginBottom:3 }}>AUDIT SCORE</div>
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:22, fontWeight:500, color:"#ffb347" }}>
+            {score}<span style={{ fontSize:11, color:"rgba(255,255,255,.2)" }}>/100</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tx details */}
+      <div className="p-5 flex flex-col gap-2">
+        <AuditTxRow label="Tx Hash"          value={proof.txHash}       color="#00e5c0" link={proof.explorerUrl}/>
+        <AuditTxRow label="Block"            value={`#${proof.blockNumber}`} color="rgba(255,255,255,.4)"/>
+        <AuditTxRow label="Gas Used"         value={proof.gasUsed}      color="rgba(255,255,255,.4)"/>
+        <AuditTxRow label="Audited Contract" value={contractAddr.length > 24 ? contractAddr.slice(0,20)+"…" : contractAddr} color="#ffb347"/>
+        <AuditTxRow label="Report CID"       value={proof.reportCID.slice(0,24)+"…"}    color="#a78bfa"/>
+        <AuditTxRow label="Report Hash"      value={proof.reportHash}   color="#52b6ff"/>
+        <AuditTxRow label="Merkle Root"      value={proof.merkleRoot}   color="#52b6ff"/>
+        <AuditTxRow label="Registry"         value="AuditRegistry.sol"  color="#ffb347" link={proof.registryUrl}/>
+        <AuditTxRow label="Anchored"         value={proof.auditedAt.replace("T"," ").replace("Z"," UTC")} color="rgba(255,255,255,.3)"/>
+      </div>
+
+      {/* What this means */}
+      <div className="px-5 pb-5">
+        <div className="p-3 border border-[#ffb34718] bg-[#ffb34706]">
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".14em",
+                        textTransform:"uppercase", color:"#ffb347", marginBottom:6 }}>
+            ⬡ What this means
+          </div>
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:"rgba(255,255,255,.4)", lineHeight:1.8 }}>
+            The audit report hash is now permanently recorded on Avalanche. Anyone can call{" "}
+            <span style={{ color:"#ffb347" }}>getAudit({contractAddr.slice(0,10)}…)</span> on
+            AuditRegistry.sol to verify this report's authenticity — no trust in TrustBox required.
+          </div>
+        </div>
+      </div>
+
+      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.18)",
+                    paddingInline:20, paddingBottom:14 }}>
+        ▲ Avalanche Fuji · AuditRegistry.sol · IPFS report
+      </div>
+    </div>
+  );
+}
+
+function AuditTxRow({ label, value, color, link }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-3 py-2 border border-white/[0.04]"
+         style={{ background:"rgba(255,255,255,.015)" }}>
+      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".1em",
+                     textTransform:"uppercase", color:"rgba(255,255,255,.28)", flexShrink:0 }}>
+        {label}
+      </span>
+      {link ? (
+        <a href={link} target="_blank" rel="noreferrer"
+           style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color, textDecoration:"underline",
+                    textDecorationColor:color+"55", maxWidth:200, wordBreak:"break-all" }}>
+          {value}
+        </a>
+      ) : (
+        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color,
+                       maxWidth:200, wordBreak:"break-all", textAlign:"right" }}>
+          {value}
+        </span>
+      )}
     </div>
   );
 }

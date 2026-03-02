@@ -183,8 +183,7 @@ export default function Landing({ setRoute }) {
               </div>
 
               {/* body */}
-              <div className="grid px-8 py-7 gap-8"
-                   style={{ gridTemplateColumns:"2fr 1fr 1fr" }}>
+              <div className="grid px-8 py-7 gap-8 feature-body-grid">
 
                 <div>
                   <p style={{ fontSize:15, fontWeight:300, color:"rgba(255,255,255,.7)", lineHeight:1.85, marginBottom:14 }}>
