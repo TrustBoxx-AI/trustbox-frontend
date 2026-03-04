@@ -8,6 +8,11 @@ import Dashboard          from "./pages/Dashboard";
 import Marketplace        from "./pages/Marketplace";
 import "./styles/global.css";
 import "./styles/components.css";
+import { authRouter }    from "./api/auth"
+import { historyRouter } from "./api/history"
+
+app.use("/api/auth",    authRouter)
+app.use("/api/history", historyRouter)
 
 export default function App() {
   const [route, setRoute] = useState("landing");

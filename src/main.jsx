@@ -5,7 +5,9 @@ import { createRoot }  from "react-dom/client";
 import App             from "./App";
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
+ <WalletProvider>
+  <AuthProvider>
     <App />
-  </StrictMode>
+  </AuthProvider>
+</WalletProvider>
 );
