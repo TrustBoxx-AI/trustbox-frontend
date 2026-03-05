@@ -1,81 +1,99 @@
-/* components/history/ScoreHistory.tsx — TrustBox */
+/* components/history/scoreHistory.tsx — TrustBox */
 
-import { ScoreRecord } from "../../hooks/useHistory"
+import type { ScoreRecord } from "../../hooks/useHistory";
+import { HEDERA_EXPLORER }  from "../../constant";
 
-const BAND_COLORS = ["", "text-red-400", "text-yellow-400", "text-blue-400", "text-green-400"]
-const BAND_BG     = ["", "bg-red-900/30", "bg-yellow-900/30", "bg-blue-900/30", "bg-green-900/30"]
-const BAND_LABELS = ["", "Poor", "Fair", "Good", "Excellent"]
-const BAND_RANGES = ["", "300–579", "580–669", "670–739", "740–850"]
+const BAND_LABEL = ["", "Poor", "Fair", "Good", "Excellent"];
+const BAND_COLOR = ["", "#ff4d6a", "#ffb347", "#52b6ff", "#00e5c0"];
 
 interface Props { scores: ScoreRecord[] }
 
 export function ScoreHistory({ scores }: Props) {
-  if (scores.length === 0) {
-    return <EmptyState icon="◎" text="No credit score records yet" />
-  }
-
-  const latest = scores[0]
+  if (!scores.length) return <Empty text="No credit scores yet"/>;
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Latest score hero */}
-      <div className={`rounded-xl p-6 border border-white/10 ${BAND_BG[latest.score_band]}`}>
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <p className="text-gray-400" style={{ fontSize: "var(--font-sm)" }}>Latest Score</p>
-            <p className={`font-bold ${BAND_COLORS[latest.score_band]}`}
-               style={{ fontSize: "var(--font-3xl)", lineHeight: 1 }}>
-              {BAND_LABELS[latest.score_band]}
-            </p>
-            <p className="text-gray-500" style={{ fontSize: "var(--font-sm)" }}>
-              Band {latest.score_band} · {BAND_RANGES[latest.score_band]}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-gray-400" style={{ fontSize: "var(--font-xs)" }}>ZK Proof</p>
-            <a href={`https://gateway.pinata.cloud/ipfs/${latest.zk_proof_cid}`}
-               target="_blank" rel="noreferrer"
-               className="text-blue-400 hover:text-blue-300 font-mono"
-               style={{ fontSize: "var(--font-xs)" }}>
-              {latest.zk_proof_cid?.slice(0, 20)}…
-            </a>
-            <p className="text-gray-500 mt-1" style={{ fontSize: "var(--font-xs)" }}>
-              {formatDate(latest.created_at)}
-            </p>
-          </div>
-        </div>
-        {latest.explorer_url && (
-          <a href={latest.explorer_url} target="_blank" rel="noreferrer"
-             className="mt-3 inline-flex items-center gap-1 text-blue-400 hover:text-blue-300"
-             style={{ fontSize: "var(--font-xs)" }}>
-            View on HCS Explorer ↗
-          </a>
-        )}
-      </div>
+    <div className="flex flex-col gap-3">
+      {scores.map((s, i) => {
+        const color = BAND_COLOR[s.score_band] ?? "#52b6ff";
+        return (
+          <div key={s.id}
+               className="border border-white/[0.055] bg-[#0b0f1a]"
+               style={{ borderColor: i === 0 ? color + "44" : undefined }}>
+            <div className="flex items-center justify-between px-6 py-4">
 
-      {/* History list */}
-      {scores.length > 1 && (
-        <div className="flex flex-col gap-2">
-          <p className="text-gray-400" style={{ fontSize: "var(--font-sm)" }}>History</p>
-          {scores.slice(1).map(s => (
-            <div key={s.id}
-                 className="flex items-center justify-between px-4 py-3 rounded-lg bg-white/5 border border-white/10">
-              <div className="flex items-center gap-3">
-                <span className={`font-semibold ${BAND_COLORS[s.score_band]}`}
-                      style={{ fontSize: "var(--font-md)" }}>
-                  {BAND_LABELS[s.score_band]}
-                </span>
-                <span className="text-gray-500" style={{ fontSize: "var(--font-xs)" }}>
-                  Band {s.score_band}
-                </span>
+              {/* Score band */}
+              <div className="flex items-center gap-5">
+                <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:28,
+                              color, lineHeight:1 }}>
+                  {BAND_LABEL[s.score_band] ?? "—"}
+                </div>
+                <div>
+                  <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8,
+                                letterSpacing:".12em", textTransform:"uppercase",
+                                color:"rgba(255,255,255,.25)", marginBottom:3 }}>
+                    Band {s.score_band}
+                  </div>
+                  <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                                color:"rgba(255,255,255,.35)" }}>
+                    {fmtDate(s.created_at)}
+                  </div>
+                </div>
               </div>
-              <span className="text-gray-500" style={{ fontSize: "var(--font-xs)" }}>
-                {formatDate(s.created_at)}
-              </span>
+
+              {/* Links */}
+              <div className="flex items-center gap-3 flex-wrap">
+                {i === 0 && <Chip label="LATEST" color="#52b6ff"/>}
+                {s.zk_proof_cid && (
+                  <a href={`https://ipfs.io/ipfs/${s.zk_proof_cid}`}
+                     target="_blank" rel="noreferrer"
+                     className="btn-g" style={{ padding:"5px 12px", fontSize:8 }}>
+                    ZK PROOF ↗
+                  </a>
+                )}
+                {s.explorer_url && (
+                  <a href={s.explorer_url}
+                     target="_blank" rel="noreferrer"
+                     className="btn-g" style={{ padding:"5px 12px", fontSize:8 }}>
+                    EXPLORER ↗
+                  </a>
+                )}
+                {s.hcs_message_id && (
+                  <a href={`${HEDERA_EXPLORER}/topic/${s.hedera_topic_id}`}
+                     target="_blank" rel="noreferrer"
+                     className="btn-g" style={{ padding:"5px 12px", fontSize:8 }}>
+                    HCS ↗
+                  </a>
+                )}
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        );
+      })}
     </div>
-  )
+  );
+}
+
+function Chip({ label, color }: { label: string; color: string }) {
+  return (
+    <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, letterSpacing:".12em",
+                   textTransform:"uppercase", color, border:`1px solid ${color}44`, padding:"2px 7px" }}>
+      {label}
+    </span>
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".2em",
+                  textTransform:"uppercase", color:"rgba(255,255,255,.18)" }}>
+        {text}
+      </p>
+    </div>
+  );
+}
+
+function fmtDate(d: string) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" });
 }

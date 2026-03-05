@@ -1,261 +1,224 @@
 /* pages/Marketplace.tsx — TrustBox
-   Agent marketplace — browse and hire verified AI agents.
-   ─────────────────────────────────────────────────────── */
+   Agent marketplace — exact design system match.
+*/
 
-import { useState, useEffect } from "react"
-
-const API_URL =
-  typeof window !== "undefined" && window.location.hostname !== "localhost"
-    ? "https://trustbox-backend-kxkr.onrender.com"
-    : "http://localhost:4000"
+import { useState, useEffect } from "react";
+import { API_URL }             from "../constants";
 
 interface Agent {
-  id:           string
-  name:         string
-  operator:     string
-  description?: string
-  capabilities: string[]
-  teeProvider?: string
-  stake:        string
-  avgScore:     number
-  status:       "online" | "offline" | "degraded" | "busy"
-  version?:     string
-  languages?:   string[]
-  auditCount?:  number
-  badge?:       string
-  [key: string]: unknown
+  id:           string;
+  name:         string;
+  operator:     string;
+  version:      string;
+  status:       "online" | "offline" | "degraded" | "busy";
+  trustScore:   number;
+  capabilities: string[];
+  stakeAmount:  string;
+  auditCount:   number;
+  model:        string;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  online:   "bg-green-400",
-  offline:  "bg-gray-500",
-  degraded: "bg-yellow-400",
-  busy:     "bg-blue-400",
-}
-
-const CAPABILITY_COLORS = [
-  "bg-blue-900/40 text-blue-300 border-blue-700/40",
-  "bg-purple-900/40 text-purple-300 border-purple-700/40",
-  "bg-green-900/40 text-green-300 border-green-700/40",
-  "bg-yellow-900/40 text-yellow-300 border-yellow-700/40",
-]
+const STATUS_COLOR: Record<string, string> = {
+  online:   "#00e5c0",
+  offline:  "rgba(255,255,255,.2)",
+  degraded: "#ffb347",
+  busy:     "#52b6ff",
+};
 
 export default function Marketplace() {
-  const [agents,  setAgents]  = useState<Agent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState<string | null>(null)
-  const [search,  setSearch]  = useState("")
-  const [filter,  setFilter]  = useState<"all" | "online" | "verified">("all")
+  const [agents,  setAgents]  = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter,  setFilter]  = useState<"all"|"online"|"verified">("all");
+  const [search,  setSearch]  = useState("");
 
   useEffect(() => {
     fetch(`${API_URL}/api/agents`)
       .then(r => r.json())
-      .then(data => {
-        setAgents(data.agents ?? data ?? [])
-        setLoading(false)
-      })
-      .catch(err => {
-        setError(err.message)
-        setLoading(false)
-      })
-  }, [])
+      .then(d => { setAgents(d.agents ?? d ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
-  const filtered = agents.filter(a => {
-    const matchSearch = !search ||
-      a.name.toLowerCase().includes(search.toLowerCase()) ||
-      a.operator.toLowerCase().includes(search.toLowerCase()) ||
-      a.capabilities.some(c => c.toLowerCase().includes(search.toLowerCase()))
-
-    const matchFilter =
-      filter === "all"      ? true :
-      filter === "online"   ? a.status === "online" :
-      filter === "verified" ? Boolean(a.badge) : true
-
-    return matchSearch && matchFilter
-  })
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20 gap-3">
-        <span className="animate-spin text-2xl text-blue-400">⟳</span>
-        <span className="text-gray-400" style={{ fontSize: "var(--font-md)" }}>
-          Loading agents…
-        </span>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <p className="text-red-400" style={{ fontSize: "var(--font-md)" }}>
-          Failed to load agents: {error}
-        </p>
-      </div>
-    )
-  }
+  const visible = agents
+    .filter(a => filter === "all" ? true : filter === "online" ? a.status === "online" : a.trustScore >= 80)
+    .filter(a => !search || a.name.toLowerCase().includes(search.toLowerCase())
+                         || a.capabilities?.some(c => c.toLowerCase().includes(search.toLowerCase()))
+                         || a.operator?.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="grid-bg min-h-screen pt-16">
 
-      {/* Header */}
-      <div>
-        <h1 className="text-gray-100 font-bold" style={{ fontSize: "var(--font-2xl)" }}>
-          Agent Marketplace
-        </h1>
-        <p className="text-gray-400 mt-1" style={{ fontSize: "var(--font-sm)" }}>
-          {agents.length} verified AI agents available · TEE-attested via Phala Network
-        </p>
+      {/* ── Top bar ── */}
+      <div className="relative z-10 flex items-center justify-between px-10 py-4
+                      border-b border-white/[0.055] bg-[#0b0f1a]">
+        <div>
+          <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".22em", textTransform:"uppercase", color:"#a78bfa", marginBottom:6 }}>
+            ⚿ Agent Marketplace
+          </p>
+          <h1 style={{ fontFamily:"'IBM Plex Serif',serif", fontSize:20, fontWeight:300 }}>
+            Verified Security Agents
+          </h1>
+        </div>
+        <button className="btn-p" style={{ background:"#a78bfa" }}
+                onClick={() => alert("Agent registration coming soon")}>
+          + Register Agent
+        </button>
       </div>
 
-      {/* Search + filters */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      {/* ── Search + filters ── */}
+      <div className="relative z-10 flex items-center gap-4 px-10 py-4 border-b border-white/[0.04] bg-[#0b0f1a] flex-wrap">
         <input
-          type="text"
+          className="tb-input"
+          style={{ maxWidth:320 }}
           placeholder="Search agents, capabilities, operators…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10
-                     text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500"
-          style={{ fontSize: "var(--font-sm)" }}
         />
         <div className="flex gap-2">
-          {(["all", "online", "verified"] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize
-                          ${filter === f
-                            ? "bg-blue-600 text-white"
-                            : "bg-white/5 text-gray-400 hover:text-gray-200 border border-white/10"
-                          }`}
-              style={{ fontSize: "var(--font-sm)", minHeight: "var(--touch-min)" }}
-            >
-              {f}
+          {(["all","online","verified"] as const).map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+                    style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".12em",
+                             textTransform:"uppercase", padding:"6px 14px",
+                             border:"1px solid",
+                             borderColor: filter === f ? "#a78bfa44" : "rgba(255,255,255,.07)",
+                             background:  filter === f ? "rgba(167,139,250,.1)" : "transparent",
+                             color:       filter === f ? "#a78bfa" : "rgba(255,255,255,.3)",
+                             cursor:"pointer", transition:"all .2s" }}>
+              {f === "all" ? "All Agents" : f === "online" ? "● Online" : "✓ Verified"}
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Agents grid */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-500"
-             style={{ fontSize: "var(--font-md)" }}>
-          No agents match your search
-        </div>
-      ) : (
-        <div className="grid gap-4"
-             style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-          {filtered.map(agent => (
-            <AgentCard key={agent.id} agent={agent} />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function AgentCard({ agent }: { agent: Agent }) {
-  return (
-    <div className="agent-card flex flex-col gap-4 rounded-xl p-5
-                    bg-white/5 border border-white/10 hover:border-white/25
-                    transition-all hover:bg-white/8">
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="agent-name text-gray-100 font-semibold truncate">
-              {agent.name}
-            </p>
-            {agent.badge && (
-              <span className="px-2 py-0.5 rounded-full bg-yellow-900/40 text-yellow-300
-                               border border-yellow-700/40"
-                    style={{ fontSize: "var(--font-xs)" }}>
-                {agent.badge}
-              </span>
-            )}
-          </div>
-          <p className="text-gray-500 truncate mt-0.5" style={{ fontSize: "var(--font-xs)" }}>
-            {agent.operator}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <div className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${STATUS_COLORS[agent.status] ?? "bg-gray-500"}`} />
-            <span className="text-gray-400 capitalize" style={{ fontSize: "var(--font-xs)" }}>
-              {agent.status}
-            </span>
-          </div>
-          <p className="text-gray-500" style={{ fontSize: "var(--font-xs)" }}>
-            v{agent.version ?? "1.0"}
-          </p>
-        </div>
-      </div>
-
-      {/* Trust score */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${
-              agent.avgScore >= 80 ? "bg-green-500"
-              : agent.avgScore >= 60 ? "bg-yellow-500"
-              : "bg-red-500"
-            }`}
-            style={{ width: `${agent.avgScore}%` }}
-          />
-        </div>
-        <span className={`font-bold shrink-0 ${
-          agent.avgScore >= 80 ? "text-green-400"
-          : agent.avgScore >= 60 ? "text-yellow-400"
-          : "text-red-400"
-        }`} style={{ fontSize: "var(--font-sm)" }}>
-          {agent.avgScore}
+        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:"rgba(255,255,255,.2)", marginLeft:"auto" }}>
+          {visible.length} agent{visible.length !== 1 ? "s" : ""}
         </span>
       </div>
 
-      {/* Capabilities */}
-      <div className="flex flex-wrap gap-1.5">
-        {agent.capabilities.slice(0, 4).map((cap, i) => (
-          <span key={cap}
-                className={`px-2 py-0.5 rounded-full border ${CAPABILITY_COLORS[i % CAPABILITY_COLORS.length]}`}
-                style={{ fontSize: "var(--font-xs)" }}>
-            {cap}
-          </span>
-        ))}
-        {agent.capabilities.length > 4 && (
-          <span className="px-2 py-0.5 rounded-full bg-white/5 text-gray-500 border border-white/10"
-                style={{ fontSize: "var(--font-xs)" }}>
-            +{agent.capabilities.length - 4} more
-          </span>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-white/10">
-        <div>
-          <p className="text-gray-500" style={{ fontSize: "var(--font-xs)" }}>Stake</p>
-          <p className="text-gray-300 font-medium" style={{ fontSize: "var(--font-sm)" }}>
-            {agent.stake}
-          </p>
-        </div>
-        {agent.auditCount !== undefined && (
-          <div className="text-right">
-            <p className="text-gray-500" style={{ fontSize: "var(--font-xs)" }}>Audits</p>
-            <p className="text-gray-300 font-medium" style={{ fontSize: "var(--font-sm)" }}>
-              {agent.auditCount.toLocaleString()}
+      {/* ── Agent grid ── */}
+      <div className="relative z-10 px-10 py-8">
+        {loading ? (
+          <div className="flex items-center justify-center py-32">
+            <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:".16em",
+                           textTransform:"uppercase", color:"rgba(255,255,255,.2)" }}>
+              <span style={{ display:"inline-block", animation:"spinCW 1s linear infinite", marginRight:8 }}>◎</span>
+              Loading agents…
+            </span>
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-32 text-center">
+            <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".2em",
+                        textTransform:"uppercase", color:"rgba(255,255,255,.18)", marginBottom:10 }}>
+              No agents found
             </p>
+            <p style={{ fontSize:13, color:"rgba(255,255,255,.2)", marginBottom:20 }}>
+              {search ? `No results for "${search}"` : "No agents registered yet."}
+            </p>
+            <button className="btn-p" style={{ background:"#a78bfa" }}
+                    onClick={() => { setSearch(""); setFilter("all"); }}>
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-4"
+               style={{ gridTemplateColumns:"repeat(auto-fill, minmax(320px, 1fr))" }}>
+            {visible.map(agent => <AgentCard key={agent.id} agent={agent}/>)}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function AgentCard({ agent }: { agent: Agent }) {
+  const statusColor = STATUS_COLOR[agent.status] ?? "rgba(255,255,255,.2)";
+  const scoreColor  = agent.trustScore >= 80 ? "#00e5c0" : agent.trustScore >= 60 ? "#ffb347" : "#ff4d6a";
+
+  return (
+    <div className="border border-white/[0.055] bg-[#0b0f1a] transition-all"
+         style={{ transition:"border-color .2s" }}
+         onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = "rgba(167,139,250,.25)"}
+         onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,.055)"}>
+
+      {/* Header */}
+      <div className="flex items-start justify-between px-5 py-4 border-b border-white/[0.04] bg-[#0f1420]">
+        <div>
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:13, color:"#e8eaf0", marginBottom:3 }}>
+            {agent.name}
+          </div>
+          <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:"rgba(255,255,255,.3)" }}>
+            {agent.operator?.slice(0,10)}… · v{agent.version ?? "1.0"}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span style={{ width:5, height:5, borderRadius:"50%", background:statusColor,
+                         display:"inline-block", animation: agent.status === "online" ? "pulseDot 2s ease infinite" : "none" }}/>
+          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".1em",
+                         textTransform:"uppercase", color:statusColor }}>
+            {agent.status}
+          </span>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="px-5 py-4">
+        {/* Trust score */}
+        <div className="flex items-center justify-between mb-3">
+          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".14em",
+                         textTransform:"uppercase", color:"rgba(255,255,255,.25)" }}>
+            Trust Score
+          </span>
+          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:18, color:scoreColor, lineHeight:1 }}>
+            {agent.trustScore}
+          </span>
+        </div>
+        {/* Score bar */}
+        <div style={{ height:2, background:"rgba(255,255,255,.06)", marginBottom:14 }}>
+          <div style={{ height:"100%", width:`${agent.trustScore}%`, background:scoreColor, transition:"width .4s" }}/>
+        </div>
+
+        {/* Model */}
+        <div className="flex items-center justify-between mb-3">
+          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.25)", letterSpacing:".1em", textTransform:"uppercase" }}>Model</span>
+          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:"rgba(255,255,255,.6)" }}>{agent.model ?? "—"}</span>
+        </div>
+
+        {/* Capabilities */}
+        {agent.capabilities?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {agent.capabilities.slice(0,4).map(c => (
+              <span key={c} style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, letterSpacing:".08em",
+                                     color:"#a78bfa", border:"1px solid rgba(167,139,250,.25)",
+                                     padding:"2px 7px", textTransform:"uppercase" }}>
+                {c}
+              </span>
+            ))}
+            {agent.capabilities.length > 4 && (
+              <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, color:"rgba(255,255,255,.2)",
+                             padding:"2px 4px" }}>
+                +{agent.capabilities.length - 4}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Stats row */}
+        <div className="flex items-center justify-between mb-4">
+          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.2)" }}>
+            {agent.auditCount ?? 0} audits · {agent.stakeAmount ?? "0"} AVAX staked
+          </span>
+        </div>
+
+        {/* Hire button */}
         <button
-          className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500
-                     text-white font-medium transition-colors"
-          style={{ fontSize: "var(--font-xs)", minHeight: "38px" }}
-          onClick={() => alert(`Hiring agent ${agent.id} — Session 11`)}
-        >
-          Hire Agent
+          className="w-full flex items-center justify-between px-4 py-3 border"
+          style={{ borderColor:"rgba(167,139,250,.3)", background:"rgba(167,139,250,.06)",
+                   fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".1em",
+                   textTransform:"uppercase", color:"#a78bfa", cursor:"pointer", transition:"background .15s" }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(167,139,250,.14)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(167,139,250,.06)"}
+          onClick={() => alert(`Hiring ${agent.name} — coming soon`)}>
+          <span>⚿ Hire Agent</span>
+          <span>→</span>
         </button>
       </div>
     </div>
-  )
+  );
 }

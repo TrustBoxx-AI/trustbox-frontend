@@ -1,150 +1,408 @@
-/* ══════════════════════════════════════════════════════
-   components.css  —  TrustBox
-   Shared UI component classes:
-   Nav · Buttons (.btn-p / .btn-g) · Form (.tb-input /
-   .tb-select / .tb-label) · Drawer scrollbar
-   ══════════════════════════════════════════════════════ */
+/* components.css — TrustBox component classes
+   All custom classes used across the app.
+   Pairs with global.css (design tokens + keyframes).
+*/
 
-/* ── Nav link ──────────────────────────────────────── */
+/* ── Nav links ────────────────────────────────────────── */
 .nav-link {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.3);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: color .2s, border-color .2s;
+}
+.nav-link:hover { color: rgba(255,255,255,.7); }
+.nav-link.active {
+  color: #52b6ff;
+  border-bottom-color: #52b6ff;
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+.btn-p {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: #52b6ff;
+  color: #06080f;
+  border: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
   letter-spacing: .14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .35);
-  text-decoration: none;
   cursor: pointer;
-  transition: color .2s;
+  transition: opacity .2s, box-shadow .2s;
+}
+.btn-p:hover:not(:disabled) {
+  opacity: .88;
+  box-shadow: 0 0 18px rgba(82,182,255,.28);
+}
+.btn-p:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.btn-g {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
   background: transparent;
-  border: none;
+  color: rgba(255,255,255,.55);
+  border: 1px solid rgba(255,255,255,.12);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .2s, color .2s, background .2s;
+  text-decoration: none;
 }
-.nav-link:hover  { color: #e8eaf0; }
-.nav-link.active {
+.btn-g:hover:not(:disabled) {
+  border-color: rgba(255,255,255,.28);
+  color: rgba(255,255,255,.85);
+  background: rgba(255,255,255,.04);
+}
+.btn-g:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+/* ── Form inputs ──────────────────────────────────────── */
+.tb-label {
+  display: block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.28);
+  margin-bottom: 7px;
+}
+
+.tb-input,
+.tb-select {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.09);
   color: #e8eaf0;
-  position: relative;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  outline: none;
+  transition: border-color .2s, background .2s;
+  box-sizing: border-box;
 }
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0; right: 0;
-  height: 1px;
-  background: #52b6ff;
+.tb-input::placeholder { color: rgba(255,255,255,.18); }
+.tb-input:focus,
+.tb-select:focus {
+  border-color: rgba(82,182,255,.45);
+  background: rgba(82,182,255,.04);
 }
 
-/* ── Feature card hover (Landing) ──────────────────── */
+/* tb-select: remove native arrow, inject custom SVG arrow */
+.tb-select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.25)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* ── Stat cards ───────────────────────────────────────── */
+.stat-card {
+  border: 1px solid rgba(255,255,255,.055);
+  background: #0b0f1a;
+  padding: 20px 24px;
+}
+.stat-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.22);
+}
+
+/* ── Agent cards ──────────────────────────────────────── */
+.agent-card {
+  border: 1px solid rgba(255,255,255,.055);
+  background: #0b0f1a;
+  transition: border-color .2s;
+}
+.agent-card:hover { border-color: rgba(167,139,250,.25); }
+.agent-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: #e8eaf0;
+}
+.agent-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,.3);
+}
+.agent-score {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* ── Feature cards ────────────────────────────────────── */
 .feature-card {
-  transition: background .25s, border-color .25s, transform .25s;
+  background: rgba(255,255,255,.012);
+  transition: background .2s;
 }
-.feature-card:hover {
-  transform: translateY(-2px);
-}
+.feature-card:hover { background: rgba(255,255,255,.022); }
 
-/* ── Feature body grid — 3-col on desktop, 1-col on mobile ── */
+/* ── Feature body grid (3 col → 2 col → 1 col) ──────── */
 .feature-body-grid {
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 1.5fr 1fr 1fr;
+}
+/* Intermediate: 2 columns at mid-width to avoid cramped 3-col */
+@media (max-width: 1100px) {
+  .feature-body-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 @media (max-width: 900px) {
   .feature-body-grid {
     grid-template-columns: 1fr;
   }
+  /* Orphaned border-l becomes border-top when stacked vertically */
   .feature-body-grid > div.border-l {
-    border-left: none;
+    border-left: none !important;
+    padding-left: 0 !important;
     border-top: 1px solid rgba(255,255,255,0.055);
-    padding-left: 0;
-    padding-top: 20px;
+    padding-top: 24px;
+    margin-top: 0;
   }
 }
 
-/* ── Mobile nav collapse ────────────────────────────── */
-@media (max-width: 680px) {
-  nav ul { display: none; }
-  .hero-stats { flex-direction: column; gap: 16px; }
+/* ── Dashboard grid ───────────────────────────────────── */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  min-height: calc(100vh - var(--shell-h));
+}
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* ── Landing hero padding on mobile ────────────────── */
-@media (max-width: 640px) {
-  section { padding-left: 24px !important; padding-right: 24px !important; }
-  .grid.feature-body-grid { padding-left: 24px; padding-right: 24px; }
+/* ── Dashboard panels ─────────────────────────────────── */
+.dashboard-left {
+  border-right: 1px solid rgba(255,255,255,.055);
+  overflow-y: auto;
+  height: calc(100vh - var(--shell-h));
 }
-
-/* ── Primary button ────────────────────────────────── */
-.btn-p {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: #06080f;
-  background: var(--c-blue);
-  padding: 11px 26px;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
+.dashboard-right-sticky {
+  position: sticky;
+  top: var(--nav-h);
+  height: calc(100vh - var(--shell-h));
+}
+.dashboard-right-scroll {
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 7px;
-  transition: background .2s, box-shadow .2s;
-  white-space: nowrap;
+  padding: 28px 24px;
+  gap: 20px;
 }
-.btn-p:hover    { background: #7eceff; box-shadow: 0 0 28px rgba(82, 182, 255, .4); }
-.btn-p:disabled { opacity: .35; cursor: not-allowed; }
+/* On mobile, right panel is not sticky */
+@media (max-width: 768px) {
+  .dashboard-left {
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,.055);
+  }
+  .dashboard-right-sticky {
+    position: static;
+    height: auto;
+  }
+  .dashboard-right-scroll {
+    height: auto;
+    padding: 24px 16px;
+  }
+}
 
-/* ── Ghost button ──────────────────────────────────── */
-.btn-g {
+/* ── Status badges ────────────────────────────────────── */
+.badge-blue   { color:#52b6ff; border:1px solid rgba(82,182,255,.3);   padding:2px 7px; font-family:'IBM Plex Mono',monospace; font-size:7px; letter-spacing:.1em; text-transform:uppercase; }
+.badge-teal   { color:#00e5c0; border:1px solid rgba(0,229,192,.3);    padding:2px 7px; font-family:'IBM Plex Mono',monospace; font-size:7px; letter-spacing:.1em; text-transform:uppercase; }
+.badge-amber  { color:#ffb347; border:1px solid rgba(255,179,71,.3);   padding:2px 7px; font-family:'IBM Plex Mono',monospace; font-size:7px; letter-spacing:.1em; text-transform:uppercase; }
+.badge-red    { color:#ff4d6a; border:1px solid rgba(255,77,106,.3);   padding:2px 7px; font-family:'IBM Plex Mono',monospace; font-size:7px; letter-spacing:.1em; text-transform:uppercase; }
+.badge-purple { color:#a78bfa; border:1px solid rgba(167,139,250,.3);  padding:2px 7px; font-family:'IBM Plex Mono',monospace; font-size:7px; letter-spacing:.1em; text-transform:uppercase; }
+.badge-gray   { color:rgba(255,255,255,.35); border:1px solid rgba(255,255,255,.1); padding:2px 7px; font-family:'IBM Plex Mono',monospace; font-size:7px; letter-spacing:.1em; text-transform:uppercase; }
+
+/* ── Section label ────────────────────────────────────── */
+.section-label {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  letter-spacing: .1em;
+  font-size: 8px;
+  letter-spacing: .2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .35);
-  background: transparent;
-  padding: 11px 26px;
-  border: 1px solid rgba(255, 255, 255, .07);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  transition: border-color .2s, color .2s;
+  color: rgba(255,255,255,.22);
+  margin-bottom: 10px;
 }
-.btn-g:hover { border-color: rgba(82, 182, 255, .4); color: #e8eaf0; }
 
-/* ── Form inputs & selects ─────────────────────────── */
-.tb-input,
-.tb-select {
+/* ── Mono text helpers ────────────────────────────────── */
+.mono-xs { font-family:'IBM Plex Mono',monospace; font-size:9px;  }
+.mono-sm { font-family:'IBM Plex Mono',monospace; font-size:11px; }
+.mono-md { font-family:'IBM Plex Mono',monospace; font-size:13px; }
+
+/* ── Tables ───────────────────────────────────────────── */
+.tb-table {
   width: 100%;
-  background: var(--bg);
-  border: 1px solid rgba(255, 255, 255, .07);
-  color: #e8eaf0;
+  border-collapse: collapse;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  padding: 10px 13px;
-  outline: none;
-  transition: border-color .2s;
-  appearance: none;
-  -webkit-appearance: none;
+  font-size: 10px;
 }
-.tb-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.25)'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 13px center;
-  padding-right: 34px;
-  cursor: pointer;
-}
-.tb-select option { background: #0b0f1a; color: #e8eaf0; }
-.tb-input:focus,
-.tb-select:focus    { border-color: rgba(82, 182, 255, .45); }
-.tb-input::placeholder { color: rgba(255, 255, 255, .18); }
-
-/* ── Form label ────────────────────────────────────── */
-.tb-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
+.tb-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 8px;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, .3);
-  margin-bottom: 6px;
-  display: block;
+  color: rgba(255,255,255,.2);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  font-weight: 400;
+}
+.tb-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  color: rgba(255,255,255,.55);
+  vertical-align: middle;
+}
+.tb-table tr:hover td { background: rgba(255,255,255,.02); }
+
+/* ── Overlay / modal / drawer ─────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(4px);
+  z-index: 40;
+  animation: overlayIn .2s ease;
 }
 
-/* ── Drawer inner scrollbar ────────────────────────── */
-.drawer-scroll::-webkit-scrollbar       { width: 2px; }
-.drawer-scroll::-webkit-scrollbar-thumb { background: rgba(82, 182, 255, .2); }
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  background: #0b0f1a;
+  border: 1px solid rgba(255,255,255,.08);
+  padding: 28px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalIn .22s ease;
+  color: #e8eaf0;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(480px, 100vw);
+  z-index: 50;
+  background: #0b0f1a;
+  border-left: 1px solid rgba(255,255,255,.07);
+  display: flex;
+  flex-direction: column;
+  animation: drawerIn .24s ease;
+  color: #e8eaf0;
+}
+
+/* Custom scrollbar inside drawer */
+.drawer-scroll::-webkit-scrollbar       { width: 3px; }
+.drawer-scroll::-webkit-scrollbar-track { background: transparent; }
+.drawer-scroll::-webkit-scrollbar-thumb { background: rgba(82,182,255,.25); border-radius:2px; }
+
+/* ── Live dot ─────────────────────────────────────────── */
+.live-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #00e5c0;
+  animation: pulseDot 1.8s ease infinite;
+  flex-shrink: 0;
+}
+
+/* ── Ticker ───────────────────────────────────────────── */
+.ticker-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+  z-index: 10;
+}
+.ticker-inner {
+  display: inline-flex;
+  white-space: nowrap;
+  width: max-content;
+  animation: ticker 40s linear infinite;
+}
+.ticker-wrap:hover .ticker-inner {
+  animation-play-state: paused;
+}
+
+/* ── Landing page section padding (mobile override) ───── */
+.landing-section {
+  padding-left:  clamp(20px, 5vw, 48px);
+  padding-right: clamp(20px, 5vw, 48px);
+}
+
+/* ── Entity grid — prevent double borders ─────────────── */
+.entity-grid {
+  display: grid;
+  border: 1px solid rgba(255,255,255,.05);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.entity-grid-item {
+  border-right:  1px solid rgba(255,255,255,.04);
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+/* Remove trailing right-border of last item in each row */
+/* Since we can't know exact column count in CSS we remove on last-child */
+.entity-grid-item:last-child {
+  border-right: none;
+}
+
+/* ── How It Works grid cells — prevent text overflow ─── */
+.hiw-grid {
+  display: grid;
+  border: 1px solid rgba(255,255,255,.05);
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.hiw-cell {
+  padding: 40px;
+  border-right: 1px solid rgba(255,255,255,.05);
+  min-width: 0; /* critical: prevents grid blowout */
+  transition: background .2s;
+}
+.hiw-cell:last-child { border-right: none; }
+.hiw-cell:hover { background: #0b0f1a; }
+
+@media (max-width: 640px) {
+  .hiw-cell {
+    padding: 28px 20px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+  }
+  .hiw-cell:last-child { border-bottom: none; }
+}

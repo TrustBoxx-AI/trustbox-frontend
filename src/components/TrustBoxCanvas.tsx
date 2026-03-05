@@ -1,299 +1,197 @@
-/* TrustBoxCanvas.jsx — TrustBox
-   3-D wireframe cube rendered on an HTML canvas.
-
-   Props:
-     boxState        "idle"|"opening"|"open"|"closing"|"spinning"|"processing"|"scored"
-     processingAction  "verify"|"audit"|"scan"|null
-     score           number|null  — trust score (stays on box once set)
-     entityAccentVar  CSS var name e.g. "--c-blue"
+/* components/TrustBoxCanvas.tsx — TrustBox
+   Props: boxState · processingAction · score · entityAccentVar
 */
 
-import { useRef, useEffect, useMemo } from "react";
-import { ACTION_META, ACCENT_HEX, CODE_SNIPPETS } from "../constants";
+import { useEffect, useRef } from "react";
+import { ACCENT_HEX }        from "../constant";
 
-export default function TrustBoxCanvas({ boxState, processingAction, score, entityAccentVar }) {
-  const canvasRef = useRef(null);
-  const rafRef    = useRef(null);
+interface Props {
+  boxState:          string;
+  processingAction?: string | null;
+  score?:            any;
+  entityAccentVar?:  string | null;
+}
 
-  /* mutable draw-loop state — lives in a ref to avoid re-render churn */
-  const S = useRef({
-    angleX: 0.3, angleY: 0.3,
-    spinSpeed: 0, targetSpeed: 0,
-    lidT: 0,        /* 0 = closed, 1 = fully open */
-    scoreAlpha: 0,  /* ramps to 1 when scored, resets to 0 when score=null */
-    glowPulse: 0,
-    codeLines: [],
-  }).current;
+const STATE_CFG: Record<string, { speed: number; open: boolean; glow: boolean }> = {
+  idle:                { speed:.003, open:false, glow:false },
+  opening:             { speed:.008, open:true,  glow:false },
+  open:                { speed:.004, open:true,  glow:false },
+  closing:             { speed:.007, open:false, glow:false },
+  spinning:            { speed:.018, open:false, glow:false },
+  parsing:             { speed:.022, open:false, glow:true  },
+  "awaiting-approval": { speed:.006, open:true,  glow:true  },
+  processing:          { speed:.025, open:false, glow:true  },
+  executing:           { speed:.030, open:false, glow:true  },
+  anchoring:           { speed:.020, open:false, glow:true  },
+  scored:              { speed:.005, open:false, glow:true  },
+  proved:              { speed:.004, open:false, glow:true  },
+};
 
-  /* derive accent colour from active action or selected entity */
-  const accentColor = useMemo(
-    () => processingAction ? ACTION_META[processingAction]?.color : (ACCENT_HEX[entityAccentVar] || "#52b6ff"),
-    [processingAction, entityAccentVar]
-  );
+function hexToRgb(hex: string) {
+  return {
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  };
+}
 
-  /* seed floating code lines once on mount */
-  useEffect(() => {
-    S.codeLines = CODE_SNIPPETS.map((s, i) => ({
-      text:  s.text,
-      col:   s.col,
-      x:    (Math.random() - .5) * 130,
-      y:    -110 + (i / (CODE_SNIPPETS.length - 1)) * 220,
-      z:    (Math.random() - .5) * 80,
-      vy:   (Math.random() - .5) * 0.12,
-      alpha: 0.55 + Math.random() * 0.3,
-    }));
-  }, []);
+/* All drawing helpers take ctx as an explicit typed parameter —
+   this avoids TypeScript re-widening closure variables to null
+   inside nested function declarations.                          */
 
-  /* update spin target when boxState changes */
-  useEffect(() => {
-    const targets = {
-      idle: 0, opening: 0, open: 0, closing: 0,
-      spinning: .016,
-      parsing: .028,
-      "awaiting-approval": .008,
-      processing: .034,
-      executing: .042,
-      anchoring: .022,
-      scored: .016,
-      proved: .012,
-    };
-    S.targetSpeed = targets[boxState] ?? 0;
-  }, [boxState]);
+function drawGlow(
+  ctx: CanvasRenderingContext2D,
+  cx: number, cy: number,
+  r: number, g: number, b: number,
+) {
+  const pulse = 0.04 + 0.03 * Math.sin(Date.now() / 400);
+  const grad  = ctx.createRadialGradient(cx, cy, 20, cx, cy, 120);
+  grad.addColorStop(0, `rgba(${r},${g},${b},${pulse})`);
+  grad.addColorStop(1, "transparent");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, cx * 2, cy * 2);
+}
 
-  /* main draw loop — re-created when colour or state changes */
+type Point = { x: number; y: number };
+
+function drawFace(
+  ctx: CanvasRenderingContext2D,
+  corners: Point[],
+  indices: number[],
+  r: number, g: number, b: number,
+  light: number, alpha: number,
+) {
+  ctx.beginPath();
+  indices.forEach((i, j) => {
+    const p = corners[i];
+    j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+  });
+  ctx.closePath();
+  ctx.fillStyle   = `rgba(${Math.round(r*light)},${Math.round(g*light)},${Math.round(b*light)},${alpha*0.18})`;
+  ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+  ctx.lineWidth   = 1;
+  ctx.fill();
+  ctx.stroke();
+}
+
+function drawBox(
+  ctx:      CanvasRenderingContext2D,
+  W: number, H: number,
+  ang: number, lid: number,
+  stateName: string,
+  accentHex: string,
+  score: any,
+) {
+  const cfg = STATE_CFG[stateName] ?? STATE_CFG.idle;
+  const { r, g, b } = hexToRgb(accentHex);
+  const cx = W / 2;
+  const cy = H / 2;
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (cfg.glow) drawGlow(ctx, cx, cy, r, g, b);
+
+  /* isometric projection */
+  const s   = 70;
+  const iso = 0.5;
+  const cos = Math.cos(ang);
+  const sin = Math.sin(ang);
+
+  function pt(x: number, y: number, z: number): Point {
+    const rx =  x * cos - y * sin;
+    const ry = (x * sin + y * cos) * iso - z * 0.86;
+    return { x: cx + rx, y: cy + ry + 20 };
+  }
+
+  const corners: Point[] = [
+    pt(-s,-s,-s), pt(s,-s,-s), pt(s,s,-s), pt(-s,s,-s),
+    pt(-s,-s, s), pt(s,-s, s), pt(s,s, s), pt(-s,s, s),
+  ];
+
+  const alpha = cfg.glow ? 0.7 : 0.5;
+  drawFace(ctx, corners, [3,2,1,0], r,g,b, 0.6, alpha);
+  drawFace(ctx, corners, [1,2,6,5], r,g,b, 0.8, alpha);
+  drawFace(ctx, corners, [4,5,6,7], r,g,b, 1.0, alpha);
+
+  /* lid */
+  if (lid > 0) {
+    const lidH  = s * 0.5;
+    const liftY = lid * 50;
+
+    function lpt(x: number, y: number, z: number): Point {
+      const rx =  x * cos - y * sin;
+      const ry = (x * sin + y * cos) * iso - (z + lidH * 2) * 0.86 - liftY;
+      return { x: cx + rx, y: cy + ry + 20 };
+    }
+
+    const lc: Point[] = [
+      lpt(-s,-s,-lidH), lpt(s,-s,-lidH), lpt(s,s,-lidH), lpt(-s,s,-lidH),
+      lpt(-s,-s, lidH), lpt(s,-s, lidH), lpt(s,s, lidH), lpt(-s,s, lidH),
+    ];
+
+    drawFace(ctx, lc, [3,2,1,0], r,g,b, 0.5, 0.55);
+    drawFace(ctx, lc, [1,2,6,5], r,g,b, 0.7, 0.55);
+    drawFace(ctx, lc, [4,5,6,7], r,g,b, 0.9, 0.55);
+  }
+
+  /* overlays */
+  if ((stateName === "scored" || stateName === "proved") && score !== null && score !== undefined) {
+    ctx.font      = `300 28px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = accentHex;
+    ctx.textAlign = "center";
+    ctx.fillText(String(score), cx, cy + 10);
+    ctx.font      = `400 9px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = `rgba(${r},${g},${b},0.5)`;
+    ctx.fillText("SCORE", cx, cy + 26);
+  }
+
+  if (stateName === "proved" && (score === null || score === undefined)) {
+    ctx.font      = `300 32px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = accentHex;
+    ctx.textAlign = "center";
+    ctx.fillText("✓", cx, cy + 14);
+  }
+}
+
+export default function TrustBoxCanvas({ boxState, score, entityAccentVar }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef    = useRef<number>(0);
+  const stateRef  = useRef(boxState);
+  stateRef.current = boxState;
+
+  const accentHex = entityAccentVar
+    ? (ACCENT_HEX[entityAccentVar] ?? "#52b6ff")
+    : "#52b6ff";
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const W = canvas.width  = 400;
-    const H = canvas.height = 400;
-    const cx = W / 2, cy = H / 2;
-    const SZ = 98; /* half-side of cube */
 
-    /* ── geometry ───────────────────────────────────── */
-    const VERTS = [
-      [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1], /* 0-3 back  */
-      [-1,-1, 1],[1,-1, 1],[1,1, 1],[-1,1, 1], /* 4-7 front */
-    ].map(v => v.map(x => x * SZ));
+    /* Cast once — all downstream helpers use explicit typed params,
+       so TypeScript never re-widens to null.                        */
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+    if (!ctx) return;
 
-    const LID_IDX   = [0,1,5,4];
-    const BODY_EDGES = [[3,2],[2,6],[6,7],[7,3],[0,3],[1,2],[5,6],[4,7]];
-    const LID_EDGES  = [[0,1],[1,5],[5,4],[4,0],[0,5],[1,4]];
+    const W = canvas.width  = 280;
+    const H = canvas.height = 280;
 
-    /* ── math helpers ───────────────────────────────── */
-    const rotX = (v,a) => [v[0], v[1]*Math.cos(a)-v[2]*Math.sin(a), v[1]*Math.sin(a)+v[2]*Math.cos(a)];
-    const rotY = (v,a) => [v[0]*Math.cos(a)+v[2]*Math.sin(a), v[1], -v[0]*Math.sin(a)+v[2]*Math.cos(a)];
-    const proj  = v => { const fov=480, z=fov/(fov+v[2]+190); return [cx+v[0]*z, cy+v[1]*z, z]; };
-    const xform = verts => verts.map(v => proj(rotY(rotX(v, S.angleX), S.angleY)));
-    const hex2  = n => Math.round(n).toString(16).padStart(2,"0");
+    let angle    = 0;
+    let lidAngle = 0;
 
-    let frame = 0;
+    function tick() {
+      const cfg = STATE_CFG[stateRef.current] ?? STATE_CFG.idle;
+      angle    += cfg.speed;
+      if (cfg.open) lidAngle = Math.min(lidAngle + 0.04, 1);
+      else          lidAngle = Math.max(lidAngle - 0.06, 0);
+      drawBox(ctx, W, H, angle, lidAngle, stateRef.current, accentHex, score);
+      rafRef.current = requestAnimationFrame(tick);
+    }
 
-    const draw = () => {
-      frame++;
-      ctx.clearRect(0,0,W,H);
-
-      /* ease rotation */
-      S.spinSpeed += (S.targetSpeed - S.spinSpeed) * .055;
-      S.angleY    += S.spinSpeed;
-      S.angleX    += S.spinSpeed * .4;
-
-      /* ease lid */
-      if (boxState === "opening") {
-        S.lidT = Math.min(S.lidT + .022, 1);
-      } else if (boxState === "awaiting-approval") {
-        /* half-open — lid holds at 50% */
-        S.lidT = S.lidT < .5 ? Math.min(S.lidT + .018, .5) : Math.max(S.lidT - .018, .5);
-      } else if (["closing","spinning","processing","scored","executing","anchoring","proved","parsing"].includes(boxState)) {
-        S.lidT = Math.max(S.lidT - .028, 0);
-      }
-
-      /* score alpha — resets when score is null, ramps up when scored */
-      if (score == null) {
-        S.scoreAlpha = 0;
-      } else if (["scored","proved"].includes(boxState) || S.scoreAlpha >= 0.01) {
-        S.scoreAlpha = Math.min(S.scoreAlpha + .04, 1);
-      }
-
-      /* glow pulse */
-      S.glowPulse = Math.sin(frame * .05) * .5 + .5;
-
-      const col = accentColor;
-
-      /* ── background glow ─────────────────────────── */
-      const glowA = ["processing","executing"].includes(boxState)    ? .1  + S.glowPulse * .09
-                  : boxState === "anchoring"                              ? .12 + S.glowPulse * .12
-                  : boxState === "parsing"                                ? .07 + S.glowPulse * .06
-                  : boxState === "awaiting-approval"                     ? .06 + S.glowPulse * .08
-                  : ["scored","proved"].includes(boxState)              ? .08 + S.glowPulse * .05
-                  : .03 + S.glowPulse * .015;
-      const gg = ctx.createRadialGradient(cx,cy,0,cx,cy,SZ*1.9);
-      gg.addColorStop(0, col + hex2(glowA*255));
-      gg.addColorStop(1, "transparent");
-      ctx.fillStyle = gg;
-      ctx.fillRect(0,0,W,H);
-
-      /* ── floating code lines ─────────────────────── */
-      if (!["idle","opening","open"].includes(boxState)) {
-        ctx.save();
-        S.codeLines.forEach(cl => {
-          cl.y += cl.vy;
-          if (cl.y >  115) cl.y = -115;
-          if (cl.y < -115) cl.y =  115;
-
-          let v3 = rotX([cl.x, cl.y, cl.z], S.angleX);
-          v3 = rotY(v3, S.angleY);
-          const pp = proj(v3);
-          const depthA = Math.max(0, Math.min(pp[2] * 1.1 - 0.05, 1));
-          const a = cl.alpha * depthA;
-          if (a < 0.04) return;
-
-          const fs = Math.round(8 * pp[2] + 4);
-          ctx.font = `${fs}px 'IBM Plex Mono', monospace`;
-          ctx.textAlign = "left";
-          ctx.textBaseline = "middle";
-
-          const tw = ctx.measureText(cl.text).width;
-          ctx.fillStyle = `rgba(6,8,15,${a * 0.55})`;
-          ctx.fillRect(pp[0] - 2, pp[1] - fs * 0.7, tw + 4, fs * 1.4);
-          ctx.fillStyle = cl.col + hex2(a * 255);
-          ctx.fillText(cl.text, pp[0], pp[1]);
-        });
-        ctx.restore();
-      }
-
-      /* ── transform vertices ─────────────────────── */
-      const tv = xform(VERTS);
-
-      /* ── lid vertices (lifted) ──────────────────── */
-      const lidOffY = S.lidT * SZ * 1.45;
-      const tlv = xform(VERTS.map((v,i) => LID_IDX.includes(i) ? [v[0], v[1]-lidOffY, v[2]] : v));
-
-      /* ── body faces ─────────────────────────────── */
-      const faceA = boxState === "processing" ? .06 : .025;
-      [[3,2,6,7],[0,3,7,4],[1,2,6,5]].forEach(face => {
-        ctx.beginPath();
-        face.forEach((fi,k) => k===0 ? ctx.moveTo(tv[fi][0],tv[fi][1]) : ctx.lineTo(tv[fi][0],tv[fi][1]));
-        ctx.closePath();
-        ctx.fillStyle = col + hex2(faceA * 255);
-        ctx.fill();
-      });
-
-      /* ── body edges ─────────────────────────────── */
-      ctx.shadowColor = col;
-      ctx.shadowBlur  = boxState === "processing" ? 8 : 3;
-      BODY_EDGES.forEach(([a,b]) => {
-        const dep = (tv[a][2]+tv[b][2]) * .5;
-        ctx.beginPath(); ctx.moveTo(tv[a][0],tv[a][1]); ctx.lineTo(tv[b][0],tv[b][1]);
-        ctx.strokeStyle = col + hex2(.7 * dep * 255);
-        ctx.lineWidth = 1.2; ctx.stroke();
-      });
-
-      /* ── lid face ───────────────────────────────── */
-      if (S.lidT < .99) {
-        ctx.beginPath();
-        LID_IDX.forEach((vi,k) => k===0 ? ctx.moveTo(tlv[vi][0],tlv[vi][1]) : ctx.lineTo(tlv[vi][0],tlv[vi][1]));
-        ctx.closePath();
-        ctx.fillStyle = col + hex2((faceA + .025) * 255);
-        ctx.fill();
-      }
-
-      /* ── lid edges ──────────────────────────────── */
-      LID_EDGES.forEach(([a,b]) => {
-        const dep = (tlv[a][2]+tlv[b][2]) * .5;
-        ctx.beginPath(); ctx.moveTo(tlv[a][0],tlv[a][1]); ctx.lineTo(tlv[b][0],tlv[b][1]);
-        ctx.strokeStyle = col + hex2(.65 * dep * 255);
-        ctx.lineWidth = 1; ctx.stroke();
-      });
-      ctx.shadowBlur = 0;
-
-      /* ── corner dots ────────────────────────────── */
-      [...tv, ...LID_IDX.map(i => tlv[i])].forEach(p => {
-        ctx.beginPath(); ctx.arc(p[0],p[1],2*p[2],0,Math.PI*2);
-        ctx.fillStyle = col + hex2(.85 * p[2] * 255);
-        ctx.fill();
-      });
-
-      /* ── cavity glow (when open) ────────────────── */
-      if (S.lidT > .2) {
-        const topC = proj(rotY(rotX([0,-SZ,0], S.angleX), S.angleY));
-        const gc = ctx.createRadialGradient(topC[0],topC[1],0,topC[0],topC[1],SZ);
-        gc.addColorStop(0, col + hex2(S.lidT * .12 * 255));
-        gc.addColorStop(1, "transparent");
-        ctx.fillStyle = gc; ctx.fillRect(0,0,W,H);
-      }
-
-      /* ── processing orbit ring ──────────────────── */
-      if (["processing","executing","anchoring"].includes(boxState)) {
-        const rr   = SZ * 1.52;
-        const prog = (frame % 100) / 100;
-        ctx.beginPath(); ctx.arc(cx,cy,rr,-Math.PI/2,-Math.PI/2+prog*Math.PI*2);
-        ctx.strokeStyle = col+"55"; ctx.lineWidth = 1.5; ctx.stroke();
-        const tipA = -Math.PI/2 + prog * Math.PI * 2;
-        ctx.beginPath(); ctx.arc(cx+Math.cos(tipA)*rr, cy+Math.sin(tipA)*rr, 3, 0, Math.PI*2);
-        ctx.fillStyle = col; ctx.fill();
-      }
-
-      /* ── score overlay on front face ────────────── */
-      if (S.scoreAlpha > .01 && score != null) {
-        const fc = proj(rotY(rotX([0,0,SZ], S.angleX), S.angleY));
-        const sa = S.scoreAlpha;
-        const rr = 34 * fc[2];
-
-        ctx.beginPath(); ctx.arc(fc[0],fc[1],rr,0,Math.PI*2);
-        ctx.fillStyle = `rgba(6,8,15,${sa*.88})`; ctx.fill();
-
-        ctx.beginPath(); ctx.arc(fc[0],fc[1],rr,0,Math.PI*2);
-        ctx.strokeStyle = col + hex2(sa*.5*255); ctx.lineWidth = 1.2; ctx.stroke();
-
-        ctx.beginPath(); ctx.arc(fc[0],fc[1],rr-3,-Math.PI/2,-Math.PI/2+(score/100)*Math.PI*2);
-        ctx.strokeStyle = col + hex2(sa*255); ctx.lineWidth = 2.5; ctx.stroke();
-
-        ctx.fillStyle = `rgba(232,234,240,${sa})`;
-        ctx.font = `500 ${Math.round(16*fc[2])}px 'IBM Plex Mono'`;
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(String(score), fc[0], fc[1]);
-      }
-
-      /* ── proved checkmark ring ─────────────────────────── */
-      if (boxState === "proved" && S.scoreAlpha > .5) {
-        const fc = proj(rotY(rotX([0,0,SZ], S.angleX), S.angleY));
-        const rr = 38 * fc[2];
-        ctx.beginPath(); ctx.arc(fc[0],fc[1],rr,0,Math.PI*2);
-        ctx.strokeStyle = "#00e5c0" + hex2(S.scoreAlpha * .6 * 255);
-        ctx.lineWidth = 1; ctx.stroke();
-      }
-
-      /* ── parsing lines rearrange into columns ──────────── */
-      if (boxState === "parsing") {
-        const t = (frame % 60) / 60;
-        const fc = proj(rotY(rotX([0,0,SZ], S.angleX), S.angleY));
-        ctx.save();
-        ctx.globalAlpha = Math.min(t * 2, .55);
-        for (let r = 0; r < 4; r++) {
-          const y = fc[1] - 24 + r * 14;
-          const w = 40 + Math.sin(frame * .1 + r) * 15;
-          ctx.beginPath();
-          ctx.moveTo(fc[0] - 28, y);
-          ctx.lineTo(fc[0] - 28 + w, y);
-          ctx.strokeStyle = "#ffb347";
-          ctx.lineWidth = 1.5; ctx.stroke();
-        }
-        ctx.restore();
-      }
-
-      rafRef.current = requestAnimationFrame(draw);
-    };
-
-    draw();
+    rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [boxState, accentColor, score]);
+  }, [accentHex, score]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="block"
-      style={{ filter: ["processing","executing","anchoring"].includes(boxState) ? "brightness(1.18)" : boxState === "proved" ? "brightness(1.1)" : "brightness(1)", transition: "filter .5s" }}
-    />
+    <canvas ref={canvasRef} width={280} height={280} style={{ display:"block" }} />
   );
 }

@@ -1,25 +1,58 @@
 /* context/WalletContext.tsx — TrustBox
-   Global wallet state — wrap App with this.
-   ──────────────────────────────────────── */
+   Wraps the useWallet hook into React context.
+   Exports:
+     WalletProvider        — wrap the app
+     useWalletContext()    — full context hook
+     useWallet()           — alias (Dashboard.jsx uses this name)
+*/
 
-import { createContext, useContext, ReactNode } from "react"
-import { useWallet, WalletState, WalletActions } from "../hooks/useWallet"
+import {
+  createContext, useContext, type ReactNode,
+} from "react";
+import {
+  useWallet as useWalletHook,
+  type WalletState,
+  type WalletActions,
+} from "../hooks/useWallet";
 
-type WalletContextType = WalletState & WalletActions
+/* ── Context type ─────────────────────────────────────── */
+interface WalletCtx extends WalletState, WalletActions {
+  evmConnected:    boolean;
+  hederaConnected: boolean;
+  connectEVM:      () => Promise<void>;
+  connectHedera:   () => Promise<void>;
+  connectBoth:     () => Promise<void>;
+}
 
-const WalletContext = createContext<WalletContextType | null>(null)
+const WalletContext = createContext<WalletCtx | null>(null);
 
+/* ── Provider ────────────────────────────────────────── */
 export function WalletProvider({ children }: { children: ReactNode }) {
-  const wallet = useWallet()
+  const wallet = useWalletHook();
+
+  const value: WalletCtx = {
+    ...wallet,
+    evmConnected:    wallet.isConnected,
+    hederaConnected: false,
+    connectEVM:      wallet.connect,
+    connectHedera:   async () => { /* HashPack stub */ },
+    connectBoth:     wallet.connect,
+  };
+
   return (
-    <WalletContext.Provider value={wallet}>
+    <WalletContext.Provider value={value}>
       {children}
     </WalletContext.Provider>
-  )
+  );
 }
 
-export function useWalletContext(): WalletContextType {
-  const ctx = useContext(WalletContext)
-  if (!ctx) throw new Error("useWalletContext must be used within WalletProvider")
-  return ctx
+/* ── Hooks ───────────────────────────────────────────── */
+export function useWalletContext(): WalletCtx {
+  const ctx = useContext(WalletContext);
+  if (!ctx) throw new Error("useWalletContext must be inside <WalletProvider>");
+  return ctx;
 }
+
+/* Alias — Dashboard.jsx / any component that does
+   `import { useWallet } from "../context/WalletContext"` */
+export const useWallet = useWalletContext;

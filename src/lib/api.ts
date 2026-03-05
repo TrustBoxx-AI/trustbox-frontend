@@ -1,9 +1,11 @@
 /* lib/api.ts — TrustBox Frontend
    Typed API client — all calls go through here.
-   Replaces every mock/hardcoded value.
    ──────────────────────────────────────────── */
 
-const BASE = import.meta.env.VITE_API_URL ?? "https://trustbox-backend-kxkr.onrender.com"
+const BASE =
+  typeof window !== "undefined" && window.location.hostname !== "localhost"
+    ? "https://trustbox-backend-kxkr.onrender.com"
+    : "http://localhost:4000"
 
 // ── Generic fetch wrapper ─────────────────────────────────────
 async function request<T>(
@@ -30,10 +32,7 @@ async function request<T>(
   return res.json() as Promise<T>
 }
 
-// ─────────────────────────────────────────────────────────────
-// AGENTS
-// ─────────────────────────────────────────────────────────────
-
+// ── Agents ────────────────────────────────────────────────────
 export interface Agent {
   id:           string
   name:         string
@@ -53,248 +52,97 @@ export interface Agent {
 }
 
 export const agentsApi = {
-  list: () =>
-    request<{ agents: Agent[] }>("/api/agents").then(r => r.agents),
-
-  active: () =>
-    request<Agent[]>("/api/agents/active"),
-
-  get: (agentId: string) =>
-    request<Agent>(`/api/agents/${agentId}`),
-
+  list:   () => request<{ agents: Agent[] }>("/api/agents").then(r => r.agents),
+  active: () => request<Agent[]>("/api/agents/active"),
+  get:    (id: string) => request<Agent>(`/api/agents/${id}`),
   register: (data: {
-    agentId:     string
-    teeEndpoint: string
-    operator:    string
-    stake?:      string
-    encPubKey?:  string
-  }) =>
-    request<{ success: boolean; agentId: string; tokenId: string; txHash: string }>(
-      "/api/agents/register",
-      { method: "POST", body: JSON.stringify(data) }
-    ),
+    agentId: string; teeEndpoint: string; operator: string
+    stake?: string; encPubKey?: string
+  }) => request<{ success: boolean; agentId: string; tokenId: string; txHash: string }>(
+    "/api/agents/register", { method: "POST", body: JSON.stringify(data) }
+  ),
 }
 
-// ─────────────────────────────────────────────────────────────
-// SCORE
-// ─────────────────────────────────────────────────────────────
-
+// ── Score ─────────────────────────────────────────────────────
 export interface ScoreResult {
-  ok:           boolean
-  score:        number
-  scoreBand:    number
-  scoreHash:    string
-  zkProofCID:   string
-  hcsMessageId: string
-  tokenId?:     string
-  txHash?:      string
-  explorerUrl?: string
+  ok: boolean; score: number; scoreBand: number
+  scoreHash: string; zkProofCID: string; hcsMessageId: string
+  tokenId?: string; txHash?: string; explorerUrl?: string
 }
 
 export const scoreApi = {
   compute: (data: {
-    walletAddress:   string
-    hederaAccountId: string
-    proof:           object
-    publicSignals:   string[]
-    modelVersion?:   string
+    walletAddress: string; hederaAccountId: string
+    proof: object; publicSignals: string[]; modelVersion?: string
   }, signature: string) =>
     request<ScoreResult>("/api/score", {
-      method:        "POST",
-      body:          JSON.stringify(data),
-      walletAddress: data.walletAddress,
-      signature,
+      method: "POST", body: JSON.stringify(data),
+      walletAddress: data.walletAddress, signature,
     }),
-
   pending: () =>
     request<{ pending: { entityId: string; paymentHistoryUrl: string }[] }>("/api/score/pending"),
 }
 
-// ─────────────────────────────────────────────────────────────
-// VERIFY (Agent registration)
-// ─────────────────────────────────────────────────────────────
-
-export interface VerifyResult {
-  ok:          boolean
-  tokenId:     string
-  metadataCID: string
-  txHash:      string
-  explorerUrl: string
-}
-
+// ── Verify ────────────────────────────────────────────────────
 export const verifyApi = {
   register: (data: {
-    walletAddress: string
-    agentName:     string
-    model:         string
-    operator:      string
-    capabilities:  string
-    environment:   "production" | "staging" | "development"
+    walletAddress: string; agentName: string; model: string
+    operator: string; capabilities: string; environment: string
   }, signature: string) =>
-    request<VerifyResult>("/api/verify", {
-      method:        "POST",
-      body:          JSON.stringify(data),
-      walletAddress: data.walletAddress,
-      signature,
-    }),
-}
-
-// ─────────────────────────────────────────────────────────────
-// AUDIT
-// ─────────────────────────────────────────────────────────────
-
-export interface AuditResult {
-  ok:          boolean
-  auditId:     string
-  reportCID:   string
-  score:       number
-  txHash:      string
-  explorerUrl: string
-}
-
-export const auditApi = {
-  submit: (data: {
-    walletAddress:   string
-    contractName:    string
-    contractAddress: string
-    chain:           string
-    abiSource?:      string
-    deployer?:       string
-  }, signature: string) =>
-    request<AuditResult>("/api/audit", {
-      method:        "POST",
-      body:          JSON.stringify(data),
-      walletAddress: data.walletAddress,
-      signature,
-    }),
-}
-
-// ─────────────────────────────────────────────────────────────
-// BLIND AUDIT (TEE)
-// ─────────────────────────────────────────────────────────────
-
-export interface BlindAuditResult {
-  ok:              boolean
-  jobId:           string
-  resultCID:       string
-  findingsHash:    string
-  attestationCID:  string
-  attestationQuote: string
-  teeProvider:     string
-  valid:           boolean
-  timestamp:       string
-}
-
-export const blindAuditApi = {
-  submit: (data: {
-    walletAddress: string
-    contractAddr:  string
-    agentId:       string
-    agentOperator: string
-    projectName?:  string
-    auditScope?:   string[]
-  }, signature: string) =>
-    request<BlindAuditResult>("/api/blindaudit", {
-      method:        "POST",
-      body:          JSON.stringify(data),
-      walletAddress: data.walletAddress,
-      signature,
-    }),
-}
-
-// ─────────────────────────────────────────────────────────────
-// INTENT
-// ─────────────────────────────────────────────────────────────
-
-export interface IntentSpec {
-  action: string
-  entity: string
-  params: Record<string, unknown>
-}
-
-export interface ParseResult {
-  ok:        boolean
-  requestId: string
-  specJson:  string
-  specHash:  string
-  nlHash:    string
-  spec:      IntentSpec
-}
-
-export interface SubmitResult {
-  ok:         boolean
-  intentId:   string
-  hcsMsgId:   string
-  avaxTxHash: string
-  explorerUrl:string
-}
-
-export const intentApi = {
-  parse: (data: {
-    walletAddress: string
-    nlText:        string
-    category:      "Travel Booking" | "Portfolio Rebalance" | "Contributor Tip"
-  }, signature: string) =>
-    request<ParseResult>("/api/intent/parse", {
-      method:        "POST",
-      body:          JSON.stringify(data),
-      walletAddress: data.walletAddress,
-      signature,
-    }),
-
-  submit: (data: {
-    walletAddress:   string
-    hederaAccountId: string
-    nlHash:          string
-    specHash:        string
-    specJson:        string
-    category:        string
-    signature:       string
-  }, walletSig: string) =>
-    request<SubmitResult>("/api/intent/submit", {
-      method:        "POST",
-      body:          JSON.stringify(data),
-      walletAddress: data.walletAddress,
-      signature:     walletSig,
-    }),
-
-  pending: () =>
-    request<{ intentId: string; spec: IntentSpec; status: string }>("/api/intent/pending"),
-
-  byTx: (txHash: string) =>
-    request<{ intentId: string; spec: IntentSpec; status: string }>(`/api/intent/by-tx/${txHash}`),
-}
-
-// ─────────────────────────────────────────────────────────────
-// SCAN
-// ─────────────────────────────────────────────────────────────
-
-export const scanApi = {
-  run: (data: {
-    walletAddress?: string
-    entityType:     string
-    entityName:     string
-    data:           Record<string, unknown>
-  }) =>
-    request<{ ok: boolean; score: number; flags: string[]; summary: string }>(
-      "/api/scan",
-      { method: "POST", body: JSON.stringify(data) }
+    request<{ ok: boolean; tokenId: string; metadataCID: string; txHash: string; explorerUrl: string }>(
+      "/api/verify", { method: "POST", body: JSON.stringify(data), walletAddress: data.walletAddress, signature }
     ),
 }
 
-// ─────────────────────────────────────────────────────────────
-// PROOF
-// ─────────────────────────────────────────────────────────────
-
-export const proofApi = {
-  get: (action: string, id: string) =>
-    request<{ ok: boolean; data: object }>(`/api/proof/${action}/${id}`),
+// ── Audit ─────────────────────────────────────────────────────
+export const auditApi = {
+  submit: (data: {
+    walletAddress: string; contractName: string
+    contractAddress: string; chain: string
+  }, signature: string) =>
+    request<{ ok: boolean; auditId: string; reportCID: string; score: number; txHash: string; explorerUrl: string }>(
+      "/api/audit", { method: "POST", body: JSON.stringify(data), walletAddress: data.walletAddress, signature }
+    ),
 }
 
-// ─────────────────────────────────────────────────────────────
-// HEALTH
-// ─────────────────────────────────────────────────────────────
+// ── Blind Audit ───────────────────────────────────────────────
+export const blindAuditApi = {
+  submit: (data: {
+    walletAddress: string; contractAddr: string
+    agentId: string; agentOperator: string
+    projectName?: string; auditScope?: string[]
+  }, signature: string) =>
+    request<{
+      ok: boolean; jobId: string; resultCID: string; findingsHash: string
+      attestationCID: string; attestationQuote: string; teeProvider: string
+      valid: boolean; timestamp: string
+    }>("/api/blindaudit", { method: "POST", body: JSON.stringify(data), walletAddress: data.walletAddress, signature }),
+}
 
+// ── Intent ────────────────────────────────────────────────────
+export const intentApi = {
+  parse: (data: {
+    walletAddress: string; nlText: string
+    category: "Travel Booking" | "Portfolio Rebalance" | "Contributor Tip"
+  }, signature: string) =>
+    request<{
+      ok: boolean; requestId: string; specJson: string
+      specHash: string; nlHash: string; spec: object
+    }>("/api/intent/parse", { method: "POST", body: JSON.stringify(data), walletAddress: data.walletAddress, signature }),
+
+  submit: (data: {
+    walletAddress: string; hederaAccountId: string; nlHash: string
+    specHash: string; specJson: string; category: string; signature: string
+  }, walletSig: string) =>
+    request<{ ok: boolean; intentId: string; hcsMsgId: string; avaxTxHash: string; explorerUrl: string }>(
+      "/api/intent/submit", { method: "POST", body: JSON.stringify(data), walletAddress: data.walletAddress, signature: walletSig }
+    ),
+
+  pending: () =>
+    request<{ intentId: string; spec: object; status: string }>("/api/intent/pending"),
+}
+
+// ── Health ────────────────────────────────────────────────────
 export const healthApi = {
   check: () =>
     request<{ status: string; version: string; timestamp: string }>("/health"),

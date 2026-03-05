@@ -1,7 +1,8 @@
 /* components/NotificationBell.tsx — TrustBox */
 
-import { useState } from "react"
+import { useState }    from "react"
 import { Notification } from "../hooks/useHistory"
+import { formatDate }   from "../utils/ui"
 
 const TYPE_ICONS: Record<string, string> = {
   score_updated:  "◎",
@@ -19,14 +20,17 @@ interface Props {
 export function NotificationBell({ notifications, unreadCount, onMarkAllRead }: Props) {
   const [open, setOpen] = useState(false)
 
+  function handleOpen() {
+    setOpen(o => !o)
+    if (unreadCount > 0) onMarkAllRead()
+  }
+
   return (
     <div className="relative">
-      {/* Bell button */}
       <button
-        onClick={() => { setOpen(o => !o); if (unreadCount > 0) onMarkAllRead() }}
+        onClick={handleOpen}
         className="relative flex items-center justify-center rounded-lg
-                   bg-white/5 hover:bg-white/10 border border-white/10
-                   transition-colors"
+                   bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
         style={{ width: "var(--touch-min)", height: "var(--touch-min)" }}
         aria-label="Notifications"
       >
@@ -40,20 +44,14 @@ export function NotificationBell({ notifications, unreadCount, onMarkAllRead }: 
         )}
       </button>
 
-      {/* Dropdown */}
       {open && (
         <>
-          {/* Backdrop */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-
-          <div className="absolute right-0 top-full mt-2 z-50
-                          w-80 max-h-96 overflow-y-auto
-                          rounded-xl bg-gray-900 border border-white/10
-                          shadow-2xl shadow-black/50">
-            <div className="sticky top-0 flex items-center justify-between
-                            px-4 py-3 border-b border-white/10 bg-gray-900">
-              <p className="font-semibold text-gray-200"
-                 style={{ fontSize: "var(--font-sm)" }}>
+          <div className="absolute right-0 top-full mt-2 z-50 w-80 max-h-96 overflow-y-auto
+                          rounded-xl bg-gray-900 border border-white/10 shadow-2xl">
+            <div className="sticky top-0 flex items-center justify-between px-4 py-3
+                            border-b border-white/10 bg-gray-900">
+              <p className="font-semibold text-gray-200" style={{ fontSize: "var(--font-sm)" }}>
                 Notifications
               </p>
               {notifications.length > 0 && (
@@ -82,18 +80,15 @@ export function NotificationBell({ notifications, unreadCount, onMarkAllRead }: 
                       {TYPE_ICONS[n.type] ?? "◆"}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-gray-200 font-medium"
-                         style={{ fontSize: "var(--font-xs)" }}>
+                      <p className="text-gray-200 font-medium" style={{ fontSize: "var(--font-xs)" }}>
                         {n.title}
                       </p>
                       {n.message && (
-                        <p className="text-gray-400 mt-0.5"
-                           style={{ fontSize: "var(--font-xs)" }}>
+                        <p className="text-gray-400 mt-0.5" style={{ fontSize: "var(--font-xs)" }}>
                           {n.message}
                         </p>
                       )}
-                      <p className="text-gray-600 mt-1"
-                         style={{ fontSize: "var(--font-xs)" }}>
+                      <p className="text-gray-600 mt-1" style={{ fontSize: "var(--font-xs)" }}>
                         {formatDate(n.created_at)}
                       </p>
                     </div>
