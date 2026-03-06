@@ -68,7 +68,7 @@ export default function Landing() {
 
   return (
     <div className="grid-bg">
-
+<br></br><br></br>
       {/* ── Hero ────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col justify-center px-12 pt-28 pb-20 overflow-hidden">
         <div className="absolute pointer-events-none"
@@ -99,7 +99,7 @@ export default function Landing() {
           TrustBox is the transparency layer for AI. Verifiable credit scores, private code audits,
           and cryptographically signed intent execution — anchored on Hedera, Avalanche, and Chainlink.
         </p>
-
+<br></br>
         {/* chain badges */}
         <div className="flex gap-2 flex-wrap mb-10" style={{ animation:"fadeUp .7s ease both .6s" }}>
           {[
@@ -115,9 +115,9 @@ export default function Landing() {
             </div>
           ))}
         </div>
-
+          <br></br><br></br>
         <div className="flex gap-4 flex-wrap" style={{ animation:"fadeUp .7s ease both .65s" }}>
-          <button className="btn-p" onClick={() => setRoute("dashboard")}>Start for Free →</button>
+          <button className="btn-p" onClick={() => setRoute("dashboard")}>Explore →</button>
           <button className="btn-g" onClick={() => setRoute("marketplace")}>Agent Marketplace ⚿</button>
         </div>
 
@@ -144,7 +144,7 @@ export default function Landing() {
       </section>
 
       <Ticker />
-
+          <br></br><br></br>
       {/* ── Flagship Features ────────────────────────── */}
       <section className="relative z-10 px-12 py-28"
                style={{ borderTop:"1px solid rgba(255,255,255,.05)" }}>
@@ -174,6 +174,7 @@ export default function Landing() {
                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,.018)"}
                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,.008)"}>
 
+<br></br>
               {/* header */}
               <div className="flex items-center justify-between px-8 py-5 border-b flex-wrap gap-4"
                    style={{ borderColor:`${f.accent}18`, background:`${f.accent}06` }}>
@@ -208,6 +209,8 @@ export default function Landing() {
                   ))}
                 </div>
               </div>
+
+              <br></br>
 
               {/* body — 3-col responsive */}
               <div className="grid px-8 py-7 gap-8"
@@ -264,6 +267,7 @@ export default function Landing() {
         </div>
       </section>
 
+<br></br>
       {/* ── How It Works ─────────────────────────────── */}
       <section className="relative z-10 px-12 py-28"
                style={{ borderTop:"1px solid rgba(255,255,255,.05)" }}>
@@ -305,6 +309,8 @@ export default function Landing() {
           ))}
         </div>
       </section>
+
+      <br></br>
 
       {/* ── All Entity Types ──────────────────────────── */}
       <section className="relative z-10 px-12 py-28"
@@ -380,6 +386,7 @@ export default function Landing() {
         </div>
       </section>
 
+<br></br>
       {/* ── Marketplace CTA ──────────────────────────── */}
       <section className="relative z-10 px-12 py-20"
                style={{ borderTop:"1px solid rgba(255,255,255,.05)",
@@ -412,6 +419,8 @@ export default function Landing() {
         </div>
       </section>
 
+      <br></br><br></br>
+
       {/* ── Main CTA ─────────────────────────────────── */}
       <section className="relative z-10 px-12 py-28 flex flex-col items-center text-center overflow-hidden"
                style={{ borderTop:"1px solid rgba(255,255,255,.05)" }}>
@@ -429,11 +438,14 @@ export default function Landing() {
           Start with a credit score, a private audit, or an intent. No credit card.
           First verification in under 5 minutes.
         </p>
+        <br></br>
+        <br></br>
         <div className="flex gap-4 flex-wrap justify-center mb-10"
              style={{ position:"relative", zIndex:1 }}>
-          <button className="btn-p" onClick={() => setRoute("dashboard")}>Start for Free →</button>
+          <button className="btn-p" onClick={() => setRoute("dashboard")}>EXPLORE →</button>
           <button className="btn-g" onClick={() => setRoute("marketplace")}>Agent Marketplace</button>
         </div>
+        <br></br>
         <div className="flex gap-6 flex-wrap justify-center" style={{ position:"relative", zIndex:1 }}>
           {[
             { icon:"ℏ", label:"Hedera HCS", color:"#8259EF" },
@@ -449,6 +461,8 @@ export default function Landing() {
         </div>
       </section>
 
+<br></br><br></br>
+
       {/* ── Footer ───────────────────────────────────── */}
       <footer className="relative z-10 px-12 py-9 flex items-center justify-between flex-wrap gap-5"
               style={{ borderTop:"1px solid rgba(255,255,255,.05)" }}>
@@ -462,6 +476,8 @@ export default function Landing() {
             © {new Date().getFullYear()} TrustBox. All rights reserved.
           </div>
         </div>
+
+
         <div className="flex gap-6 flex-wrap">
           {["Privacy","Terms","Security","Status","Docs","Marketplace"].map(l => (
             <span key={l}

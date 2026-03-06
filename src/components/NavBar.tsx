@@ -38,7 +38,7 @@ export function NavBar() {
       {/* Logo */}
       <button onClick={() => navigate("/")}
               style={{ background:"none", border:"none", cursor:"pointer",
-                       fontFamily:"'IBM Plex Mono',monospace", fontSize:13,
+                       fontFamily:"'IBM Plex Mono',monospace", fontSize:14,
                        fontWeight:500, letterSpacing:".08em", color:"#e8eaf0" }}>
         Trust<span style={{ color:"#52b6ff" }}>Box</span>
       </button>
@@ -51,7 +51,7 @@ export function NavBar() {
             <li key={l.to}>
               <Link to={l.to} style={{
                 fontFamily:      "'IBM Plex Mono',monospace",
-                fontSize:        9,
+                fontSize:        12,
                 letterSpacing:   ".2em",
                 textTransform:   "uppercase",
                 textDecoration:  "none",
