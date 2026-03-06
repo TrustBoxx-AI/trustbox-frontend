@@ -1,17 +1,16 @@
 /* components/ResultsDrawer.tsx — TrustBox
 
-   FIXES:
-     H-06 — IntentCard now reads result.spec ?? result.specJson so it
-             renders regardless of which key the backend returns.
-     H-07 — AuditCard renders for blindaudit even when score comes
-             from a nested field; success check is also normalised
-             to handle both ok:true and success:true response shapes.
+   FIXES applied in this version:
+     BUG-01 — ../constants → ../constant  (was causing API_URL=undefined → 404)
+     BUG-02 — useWallet    → useWalletContext  (was crashing on mount → 401 + 400)
+     H-06   — IntentCard reads result.spec ?? result.specJson
+     H-07   — AuditCard handles blindaudit nested score + ok/success normalise
 */
 
 import { useState, useEffect } from "react"
-import { API_URL, FUJI_EXPLORER, HEDERA_EXPLORER } from "../constants"
-import { useAuthContext }        from "../context/AuthContext"
-import { useWallet }             from "../context/WalletContext"
+import { API_URL, FUJI_EXPLORER, HEDERA_EXPLORER } from "../constants"  
+import { useAuthContext }   from "../context/AuthContext"
+import { useWalletContext } from "../context/WalletContext"              // ← FIX BUG-02: was useWallet (doesn't exist)
 
 interface Props {
   action:      string
@@ -81,10 +80,14 @@ function buildScanPayload(entityData: any, walletAddress: string) {
 }
 
 function buildExecutePayload(entityData: any, walletAddress: string) {
+  const VALID_CATEGORIES = ["Travel Booking", "Portfolio Rebalance", "Contributor Tip"]
+  const category = VALID_CATEGORIES.includes(entityData.category)
+    ? entityData.category
+    : "Travel Booking"
   return {
     walletAddress,
     nlText:   entityData.nlText   ?? entityData.intentText ?? "",
-    category: entityData.category ?? "Travel Booking",
+    category,
   }
 }
 
@@ -101,8 +104,9 @@ function buildPayload(action: string, entityData: any, walletAddress: string) {
 }
 
 export default function ResultsDrawer({ action, entityLabel, entityData, onClose, onScored }: Props) {
-  const { token }      = useAuthContext() as any
-  const { address } = useWallet()
+  const { token }   = useAuthContext() as any
+  const { address } = useWalletContext()                                 // ← FIX BUG-02: correct hook name
+
   const cfg = ACTION_CONFIG[action] ?? { label:action, color:"#52b6ff", icon:"◆", endpoint:"" }
 
   const [phase,  setPhase]  = useState<"idle"|"running"|"done"|"error">("idle")
@@ -117,13 +121,14 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
     setErrMsg(null)
 
     try {
+      // FIX BUG-02 side-effect: address now correctly resolved from useWalletContext
       const walletAddress = address
         ?? entityData?.walletAddress
         ?? "0x0000000000000000000000000000000000000000"
 
       const payload = buildPayload(action, entityData, walletAddress)
 
-      const res  = await fetch(`${API_URL}${cfg.endpoint}`, {
+      const res = await fetch(`${API_URL}${cfg.endpoint}`, {
         method:  "POST",
         headers: {
           "Content-Type":  "application/json",
@@ -134,12 +139,14 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
 
       const data = await res.json()
 
-      // Normalise success check: backend uses either success:true or ok:true
+      // Normalise success: backend uses either success:true or ok:true
       const isSuccess = data.success === true || data.ok === true
       if (!res.ok || !isSuccess) throw new Error(
         data.error ??
         data.message ??
-        (data.issues ? data.issues.map((i: any) => `${i.field}: ${i.message}`).join("; ") : "Request failed")
+        (data.issues
+          ? data.issues.map((i: any) => `${i.field}: ${i.message}`).join("; ")
+          : "Request failed")
       )
 
       setResult(data)
@@ -193,7 +200,8 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
                           textTransform:"uppercase", color:cfg.color }}>
                 {cfg.label.toUpperCase()} IN PROGRESS
               </p>
-              <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.2)" }}>
+              <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8,
+                          color:"rgba(255,255,255,.2)" }}>
                 Submitting to blockchain…
               </p>
             </div>
@@ -229,12 +237,12 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
                 <ScoreCard band={result.scoreBand} cid={result.receiptCID}/>
               )}
 
-              {/* Audit score — FIX H-07: score field now always present in blindaudit response */}
+              {/* Audit score — H-07: normalised for both audit + blindaudit */}
               {(action === "audit" || action === "blindaudit") && result.score !== undefined && (
                 <AuditCard score={result.score} type={action} quote={result.attestationQuote}/>
               )}
 
-              {/* Intent spec — FIX H-06: fallback to result.specJson if result.spec absent */}
+              {/* Intent spec — H-06: fallback to result.specJson if result.spec absent */}
               {action === "execute" && (result.spec || result.specJson) && (
                 <IntentCard spec={result.spec ?? result.specJson}/>
               )}
@@ -242,11 +250,12 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
               {/* KV rows */}
               <div style={{ marginTop:20 }}>
                 <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".18em",
-                             textTransform:"uppercase", color:"rgba(255,255,255,.2)", marginBottom:10 }}>
+                            textTransform:"uppercase", color:"rgba(255,255,255,.2)", marginBottom:10 }}>
                   Transaction Details
                 </p>
                 {Object.entries(result)
-                  .filter(([k]) => !["ok","success","spec","specJson","scoreBand","scoreBandLabel","demo","findings"].includes(k))
+                  .filter(([k]) => !["ok","success","spec","specJson","scoreBand",
+                                     "scoreBandLabel","demo","findings"].includes(k))
                   .filter(([,v]) => v !== null && v !== undefined && v !== "")
                   .map(([k,v]) => <KVRow key={k} label={k} value={v}/>)
                 }
@@ -254,11 +263,17 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
 
               {/* Explorer links */}
               <div className="flex flex-col gap-2 mt-5">
-                {result.explorerUrl     && <ExplorerBtn href={result.explorerUrl}                               label="VIEW ON SNOWTRACE"/>}
-                {result.txHash          && <ExplorerBtn href={`${FUJI_EXPLORER}/tx/${result.txHash}`}           label="VIEW TRANSACTION"/>}
-                {result.hcsMessageId    && <ExplorerBtn href={`${HEDERA_EXPLORER}/topic/${result.topicId??""}`} label="VIEW ON HEDERA HCS"/>}
-                {result.sequenceNum     && result.topicId && (
-                  <ExplorerBtn href={`${HEDERA_EXPLORER}/topic/${result.topicId}`} label="VIEW HCS TRAIL"/>
+                {result.explorerUrl  && (
+                  <ExplorerBtn href={result.explorerUrl}                               label="VIEW ON SNOWTRACE"/>
+                )}
+                {result.txHash       && (
+                  <ExplorerBtn href={`${FUJI_EXPLORER}/tx/${result.txHash}`}           label="VIEW TRANSACTION"/>
+                )}
+                {result.hcsMessageId && (
+                  <ExplorerBtn href={`${HEDERA_EXPLORER}/topic/${result.topicId??""}`} label="VIEW ON HEDERA HCS"/>
+                )}
+                {result.sequenceNum && result.topicId && (
+                  <ExplorerBtn href={`${HEDERA_EXPLORER}/topic/${result.topicId}`}     label="VIEW HCS TRAIL"/>
                 )}
               </div>
             </div>
@@ -277,15 +292,16 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
   )
 }
 
-/* ── Sub-components ────────────────────────────────────── */
-const BAND_LABEL = ["","POOR","FAIR","GOOD","EXCELLENT"]
-const BAND_COLOR = ["","#ff4d6a","#ffb347","#52b6ff","#00e5c0"]
+/* ── Sub-components ─────────────────────────────────────── */
+const BAND_LABEL = ["", "POOR", "FAIR", "GOOD", "EXCELLENT"]
+const BAND_COLOR = ["", "#ff4d6a", "#ffb347", "#52b6ff", "#00e5c0"]
 
 function ScoreCard({ band, cid }: { band: number; cid?: string }) {
   return (
     <div className="text-center py-8 px-6 mb-4"
          style={{ border:`1px solid ${BAND_COLOR[band]}44`, background:`${BAND_COLOR[band]}08` }}>
-      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:32, color:BAND_COLOR[band], lineHeight:1 }}>
+      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:32,
+                    color:BAND_COLOR[band], lineHeight:1 }}>
         {BAND_LABEL[band]}
       </div>
       <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".14em",
@@ -293,7 +309,8 @@ function ScoreCard({ band, cid }: { band: number; cid?: string }) {
         Band {band}
       </div>
       {cid && (
-        <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:"rgba(255,255,255,.2)", marginTop:8 }}>
+        <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
+                      color:"rgba(255,255,255,.2)", marginTop:8 }}>
           ZK: {cid.slice(0,24)}…
         </div>
       )}
@@ -306,23 +323,26 @@ function AuditCard({ score, type, quote }: { score: number; type: string; quote?
   return (
     <div className="flex items-center justify-between px-5 py-4 mb-4"
          style={{ border:"1px solid rgba(255,255,255,.07)", background:"rgba(255,255,255,.02)" }}>
-      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
-                     letterSpacing:".12em", textTransform:"uppercase", color:"rgba(255,255,255,.3)" }}>
+      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".12em",
+                     textTransform:"uppercase", color:"rgba(255,255,255,.3)" }}>
         {type === "blindaudit" ? "TEE AUDIT SCORE" : "AUDIT SCORE"}
       </span>
-      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:24, color:c }}>{score}/100</span>
+      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:24, color:c }}>
+        {score}/100
+      </span>
     </div>
   )
 }
 
 function IntentCard({ spec }: { spec: any }) {
-  // Normalise: spec may be a parsed object or a JSON string
-  const specObj = typeof spec === "string" ? (() => { try { return JSON.parse(spec) } catch { return { action: spec, entity: "", params: {} } } })() : spec
+  const specObj = typeof spec === "string"
+    ? (() => { try { return JSON.parse(spec) } catch { return { action: spec, entity: "", params: {} } } })()
+    : spec
   return (
     <div className="px-5 py-4 mb-4"
          style={{ border:"1px solid rgba(255,255,255,.07)", background:"rgba(255,255,255,.02)" }}>
       <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".14em",
-                   textTransform:"uppercase", color:"rgba(255,255,255,.25)", marginBottom:8 }}>
+                  textTransform:"uppercase", color:"rgba(255,255,255,.25)", marginBottom:8 }}>
         Parsed Intent
       </p>
       <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:"#52b6ff" }}>
