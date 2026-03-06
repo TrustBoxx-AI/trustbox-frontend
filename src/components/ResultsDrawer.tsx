@@ -1,16 +1,9 @@
-/* components/ResultsDrawer.tsx — TrustBox
-
-   FIXES applied in this version:
-     BUG-01 — ../constants → ../constant  (was causing API_URL=undefined → 404)
-     BUG-02 — useWallet    → useWalletContext  (was crashing on mount → 401 + 400)
-     H-06   — IntentCard reads result.spec ?? result.specJson
-     H-07   — AuditCard handles blindaudit nested score + ok/success normalise
-*/
+/* components/ResultsDrawer.tsx — TrustBox */
 
 import { useState, useEffect } from "react"
 import { API_URL, FUJI_EXPLORER, HEDERA_EXPLORER } from "../constants"  
 import { useAuthContext }   from "../context/AuthContext"
-import { useWalletContext } from "../context/WalletContext"              // ← FIX BUG-02: was useWallet (doesn't exist)
+import { useWalletContext } from "../context/WalletContext"             
 
 interface Props {
   action:      string
