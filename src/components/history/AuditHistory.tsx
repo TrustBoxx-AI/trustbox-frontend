@@ -1,7 +1,7 @@
 /* components/history/auditHistory.tsx — TrustBox */
 
 import type { AuditRecord, BlindAuditRecord } from "../../hooks/useHistory";
-import { FUJI_EXPLORER } from "../../constant";
+import { FUJI_EXPLORER } from "../../constants";
 
 interface Props {
   audits:      AuditRecord[];

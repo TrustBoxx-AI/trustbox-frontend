@@ -3,7 +3,7 @@
 */
 
 import { useEffect, useRef } from "react";
-import { ACCENT_HEX }        from "../constant";
+import { ACCENT_HEX }        from "../constants";
 
 interface Props {
   boxState:          string;

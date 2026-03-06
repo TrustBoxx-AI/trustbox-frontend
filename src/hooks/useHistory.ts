@@ -1,7 +1,7 @@
 /* hooks/useHistory.ts — TrustBox */
 
 import { useState, useEffect, useCallback } from "react";
-import { API_URL } from "../constant";
+import { API_URL } from "../constants";
 
 /* ── Record types — fields must match backend response exactly ── */
 

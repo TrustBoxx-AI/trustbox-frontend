@@ -3,7 +3,7 @@
 import { useState }        from "react";
 import { useHistory }      from "../hooks/useHistory";
 import { useAuthContext }  from "../context/AuthContext";
-import { FUJI_EXPLORER, HEDERA_EXPLORER } from "../constant";
+import { FUJI_EXPLORER, HEDERA_EXPLORER } from "../constants";
 
 type Tab = "overview" | "scores" | "audits" | "intents" | "agents";
 

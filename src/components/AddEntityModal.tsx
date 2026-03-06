@@ -5,7 +5,7 @@
 */
 
 import { useState }         from "react";
-import { ENTITY_TYPES, ACCENT_HEX } from "../constant";
+import { ENTITY_TYPES, ACCENT_HEX } from "../constants";
 
 interface Props {
   onClose:  () => void;

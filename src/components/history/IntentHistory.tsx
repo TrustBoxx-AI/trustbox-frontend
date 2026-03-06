@@ -1,7 +1,7 @@
 /* components/history/intentHistory.tsx — TrustBox */
 
 import type { IntentRecord } from "../../hooks/useHistory";
-import { FUJI_EXPLORER }     from "../../constant";
+import { FUJI_EXPLORER }     from "../../constants";
 
 interface Props { intents: IntentRecord[] }
 

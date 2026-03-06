@@ -1,7 +1,7 @@
 /* components/history/scoreHistory.tsx — TrustBox */
 
 import type { ScoreRecord } from "../../hooks/useHistory";
-import { HEDERA_EXPLORER }  from "../../constant";
+import { HEDERA_EXPLORER }  from "../../constants";
 
 const BAND_LABEL = ["", "Poor", "Fair", "Good", "Excellent"];
 const BAND_COLOR = ["", "#ff4d6a", "#ffb347", "#52b6ff", "#00e5c0"];
