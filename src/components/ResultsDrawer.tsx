@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from "react"
 import { API_URL, FUJI_EXPLORER, HEDERA_EXPLORER } from "../constants"
+import { generateCreditScoreProof, estimateCreditScore } from "../utils/creditScoreProver"
 import { useAuthContext }   from "../context/AuthContext"
 import { useWalletContext } from "../context/WalletContext"
 
@@ -59,6 +60,7 @@ function buildAutoPayload(action: string, entityData: any, walletAddress: string
       walletAddress,
       hederaAccountId: entityData.hederaAccountId ?? "",
       modelVersion:    entityData.modelVersion    ?? "TrustCredit v2.1",
+      // proof + publicSignals injected by generateProofThenScore() before fetch
     }
     case "audit": return {
       walletAddress,
@@ -97,10 +99,11 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
   const isHITL      = HITL_ACTIONS.includes(action)
 
   type Phase = "preparing"|"awaiting-approval"|"signing"|"submitting"|"running"|"done"|"error"
-  const [phase,    setPhase]    = useState<Phase>(isHITL ? "preparing" : "running")
-  const [result,   setResult]   = useState<any>(null)
-  const [prepared, setPrepared] = useState<any>(null)
-  const [errMsg,   setErrMsg]   = useState<string|null>(null)
+  const [phase,       setPhase]       = useState<Phase>(isHITL ? "preparing" : "running")
+  const [result,      setResult]      = useState<any>(null)
+  const [prepared,    setPrepared]    = useState<any>(null)
+  const [errMsg,      setErrMsg]      = useState<string|null>(null)
+  const [proofStatus, setProofStatus] = useState<"idle"|"generating"|"ready"|"demo">("idle")
 
   const walletAddress = address ?? entityData?.walletAddress ?? "0x0000000000000000000000000000000000000000"
   const authHeaders   = { "Content-Type":"application/json", ...(token ? { Authorization:`Bearer ${token}` } : {}) }
@@ -163,9 +166,55 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? "Submission failed")
       setResult(data); setPhase("done")
-      onScored(data.score ?? data.scoreBand ?? data.trustScore ?? data)
+      onScored(typeof data.scoreBand === "number" ? data.scoreBand : typeof data.score === "number" ? data.score : typeof data.trustScore === "number" ? data.trustScore : null)
       writeHistory(data)
     } catch (e: any) { setErrMsg(e.message); setPhase("error") }
+  }
+
+  // ── Score: ZK proof generation + API call ──────────────────
+  async function runScoreWithProof() {
+    setErrMsg(null)
+
+    // Step 1: estimate score from wallet data for the circuit input
+    const txCount    = entityData.txCount    ?? 50
+    const balanceEth = entityData.balanceEth ?? 0.5
+    const agedays    = entityData.agedays    ?? 180
+    const nftCount   = entityData.nftCount   ?? 0
+    const rawScore   = estimateCreditScore({ txCount, balanceEth, agedays, nftCount })
+
+    // Step 2: generate ZK proof (or skip gracefully — backend falls back to demo)
+    let proofPayload: { proof?: object; publicSignals?: string[] } = {}
+    try {
+      setProofStatus("generating")
+      const result = await generateCreditScoreProof(rawScore)
+      proofPayload  = { proof: result.proof, publicSignals: result.publicSignals }
+      setProofStatus("ready")
+      console.log("[score] ZK proof generated — band:", result.scoreBand)
+    } catch (e: any) {
+      console.warn("[score] ZK proof skipped (circuit not compiled yet):", e.message)
+      setProofStatus("demo")
+    }
+
+    // Step 3: call /api/score with or without proof
+    const payload = {
+      walletAddress,
+      hederaAccountId: entityData.hederaAccountId ?? "",
+      modelVersion:    entityData.modelVersion    ?? "TrustCredit v2.1",
+      ...proofPayload,
+    }
+
+    const res  = await fetch(`${API_URL}/api/score`, {
+      method:"POST", headers:authHeaders, body:JSON.stringify(payload),
+    })
+    const data = await res.json()
+    const ok   = data.success === true || data.ok === true
+    if (!res.ok || !ok) throw new Error(
+      data.error ?? data.message ??
+      (data.issues ? data.issues.map((i: any) => `${i.field}: ${i.message}`).join("; ") : "Score request failed")
+    )
+    setResult(data); setPhase("done")
+    onScored(typeof data.scoreBand === "number" ? data.scoreBand : null)
+    writeHistory(data)
   }
 
   async function autoRun() {
@@ -184,7 +233,7 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
         (data.issues ? data.issues.map((i: any) => `${i.field}: ${i.message}`).join("; ") : "Request failed")
       )
       setResult(data); setPhase("done")
-      onScored(data.scoreBand ?? data.score ?? data.trustScore ?? data)
+      onScored(typeof data.scoreBand === "number" ? data.scoreBand : typeof data.score === "number" ? data.score : typeof data.trustScore === "number" ? data.trustScore : null)
       writeHistory(data)
     } catch (e: any) { setErrMsg(e.message); setPhase("error") }
   }
@@ -242,7 +291,19 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
         <div style={{ flex:1, overflowY:"auto", padding:"24px" }}>
 
           {(phase === "preparing") && <Spinner color={cfg.color} label="Preparing…" sub="Computing hashes, pinning metadata…"/>}
-          {(phase === "running")   && <Spinner color={cfg.color} label={`${cfg.label.toUpperCase()} IN PROGRESS`} sub="Submitting to blockchain…"/>}
+          {(phase === "running") && action !== "score" && <Spinner color={cfg.color} label={`${cfg.label.toUpperCase()} IN PROGRESS`} sub="Submitting to blockchain…"/>}
+          {(phase === "running") && action === "score" && (
+            <Spinner
+              color={cfg.color}
+              label={proofStatus === "generating" ? "GENERATING ZK PROOF…" : "CREDIT SCORE IN PROGRESS"}
+              sub={
+                proofStatus === "generating" ? "Running Groth16 circuit in browser…" :
+                proofStatus === "ready"      ? "Proof ready — submitting to Hedera…" :
+                proofStatus === "demo"       ? "Demo mode — submitting without proof…" :
+                "Estimating score from on-chain data…"
+              }
+            />
+          )}
           {(phase === "signing")   && <Spinner color="#ffb347" label="Waiting for MetaMask…" sub="Check MetaMask and click Sign"/>}
           {(phase === "submitting")&& <Spinner color={cfg.color} label="Submitting on-chain…" sub="Transaction broadcasting…"/>}
 
@@ -320,6 +381,14 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
                 </span>
               </div>
 
+              {result.demo === false && result.proofType && (
+                <div className="flex items-center gap-2 px-4 py-3 mb-4" style={{ border:"1px solid rgba(167,139,250,.25)", background:"rgba(167,139,250,.05)" }}>
+                  <span style={{ color:"#a78bfa" }}>◎</span>
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"#a78bfa", letterSpacing:".1em" }}>
+                    ZK PROOF VERIFIED ON-CHAIN · {result.proofType}
+                  </span>
+                </div>
+              )}
               {result.approvedBy && (
                 <div className="flex items-center gap-2 px-4 py-3 mb-4" style={{ border:"1px solid rgba(0,229,192,.2)", background:"rgba(0,229,192,.04)" }}>
                   <span style={{ color:"#00e5c0" }}>✓</span>

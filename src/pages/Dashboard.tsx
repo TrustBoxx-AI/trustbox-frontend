@@ -115,16 +115,9 @@ export default function Dashboard() {
       setBoxAccent(entity.typeMeta.accentVar);
       setBoxScore(null);
 
-      if (entity.typeMeta.action === "execute") {
-        setBoxState("parsing");
-        setTimeout(() => {
-          setBoxState("awaiting-approval");
-          setDrawer({ action: entity.typeMeta.action, label: getEntityName(entity), entityData: entity.data });
-        }, 2200);
-      } else {
-        setBoxState("processing");
-        setDrawer({ action: entity.typeMeta.action, label: getEntityName(entity), entityData: entity.data });
-      }
+      // Drawer owns all phases (preparing → awaiting-approval → signing → done)
+      setBoxState("processing");
+      setDrawer({ action: entity.typeMeta.action, label: getEntityName(entity), entityData: entity.data });
     };
 
     if (requires) {
@@ -135,8 +128,16 @@ export default function Dashboard() {
   };
 
   /* ── Scoring / proof callbacks ───────────────────────── */
-  const handleScored = (score: any) => {
-    setBoxScore(score);
+  const handleScored = (rawScore: any) => {
+    // Extract a clean numeric value — never pass object to canvas
+    let cleanScore: number | null = null;
+    if (typeof rawScore === "number") {
+      cleanScore = rawScore;
+    } else if (typeof rawScore === "object" && rawScore !== null) {
+      const v = rawScore.scoreBand ?? rawScore.score ?? rawScore.trustScore ?? rawScore.agentScore;
+      cleanScore = typeof v === "number" ? v : null;
+    }
+    setBoxScore(cleanScore);
     const action = drawer?.action;
 
     // ── Record in history ─────────────────────────────────────
@@ -144,21 +145,14 @@ export default function Dashboard() {
     if (drawer && selected?.id) {
       updateEntity(selected.id, {
         lastAction: action,
-        lastScore: score,
+        lastScore: cleanScore,
         lastActionAt: new Date().toISOString(),
       });
     }
 
-    if (action === "execute") {
-      setBoxState("executing");
-      setTimeout(() => setBoxState("anchoring"), 1200);
-      setTimeout(() => setBoxState("proved"),    2600);
-    } else if (["score","blindaudit","verify","audit"].includes(action)) {
-      setBoxState("anchoring");
-      setTimeout(() => setBoxState("proved"), 1400);
-    } else {
-      setTimeout(() => setBoxState("scored"), 350);
-    }
+    // HITL actions (verify/execute) complete via drawer → same animation
+    setBoxState("anchoring");
+    setTimeout(() => setBoxState("proved"), 1400);
   };
 
   const closeDrawer = () => setDrawer(null);
@@ -166,11 +160,21 @@ export default function Dashboard() {
   /* ── Dynamic box state label ─────────────────────────── */
   const boxStateLabel = () => {
     if (boxState === "processing") return drawer ? `${(ACTION_META as any)[drawer.action]?.label}…` : "Processing…";
-    if (boxState === "scored")     return `Score: ${boxScore}/100`;
+    if (boxState === "scored") {
+      const BAND = {1:"POOR",2:"FAIR",3:"GOOD",4:"EXCELLENT"};
+      const bandName = (BAND as any)[boxScore];
+      return bandName ? `Score: ${bandName}` : (boxScore !== null ? `Score: ${boxScore}/100` : "Scored");
+    }
     if (boxState === "proved") {
-      if (drawer?.action === "verify") return "ERC-8004 Minted ✓";
-      if (drawer?.action === "audit")  return "Audit Anchored ✓";
-      return `Proved: ${boxScore ?? "✓"}`;
+      if (drawer?.action === "verify")     return "ERC-8004 Minted ✓";
+      if (drawer?.action === "execute")    return "Intent Signed & Executed ✓";
+      if (drawer?.action === "audit")      return "Audit Anchored ✓";
+      if (drawer?.action === "blindaudit") return "TEE Audit Complete ✓";
+      if (drawer?.action === "score") {
+        const BAND: Record<number,string> = {1:"POOR",2:"FAIR",3:"GOOD",4:"EXCELLENT"};
+        return boxScore !== null ? `ZK Score: ${BAND[boxScore] ?? boxScore} ✓` : "ZK Score Proved ✓";
+      }
+      return "Proved ✓";
     }
     return STATE_LABEL[boxState] || boxState;
   };
@@ -181,8 +185,14 @@ export default function Dashboard() {
     if (boxState === "processing")        return (ACTION_META as any)[drawer?.action || "scan"]?.color;
     if (boxState === "scored")            return "#52b6ff";
     if (boxState === "proved") {
-      if (drawer?.action === "verify") return "#52b6ff";
-      if (drawer?.action === "audit")  return "#ffb347";
+      if (drawer?.action === "score") {
+        const BAND_C: Record<number,string> = {1:"#ff4d6a",2:"#ffb347",3:"#52b6ff",4:"#00e5c0"};
+        return BAND_C[boxScore] ?? "#00e5c0";
+      }
+      if (drawer?.action === "verify")     return "#52b6ff";
+      if (drawer?.action === "audit")      return "#ffb347";
+      if (drawer?.action === "execute")    return "#ffb347";
+      if (drawer?.action === "blindaudit") return "#a78bfa";
       return "#00e5c0";
     }
     if (boxState === "parsing")           return "#ffb347";
@@ -215,9 +225,9 @@ export default function Dashboard() {
                            textTransform:"uppercase", color: boxLabelColor() }}>
               <span style={{ width:5, height:5, borderRadius:"50%", background:"currentColor",
                              display:"inline-block", animation:"pulseDot 1s ease infinite" }}/>
-              {boxState === "parsing"    ? "Parsing Intent…"
-             : boxState === "anchoring" ? "Anchoring…"
-             : boxState === "executing" ? "Executing…"
+              {boxState === "anchoring"                                ? "Anchoring to chain…"
+             : drawer?.action === "verify" && boxState === "processing" ? "Preparing credential…"
+             : drawer?.action === "execute" && boxState === "processing"? "Parsing intent…"
              : (drawer?.action?.toUpperCase() ?? "") + " IN PROGRESS"}
             </span>
           )}
