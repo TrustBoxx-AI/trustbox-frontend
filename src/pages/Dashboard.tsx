@@ -1,21 +1,33 @@
 /* Dashboard.tsx — TrustBox
    Main dashboard: entity list (left) + 3D box stage (right).
 
-   Styling fixes applied:
-   - Left panel height constrained to calc(100vh - var(--shell-h)) for scroll
-   - Dashboard grid uses .dashboard-grid class (CSS handles mobile breakpoint)
-   - Right panel separates sticky wrapper from scroll container (can't be same element)
-   - CSS var --shell-h used instead of hardcoded 116px
+   Behavioral contract (from original):
+   ─────────────────────────────────────
+   Add entity:     idle → opening (1100ms) → open → commit → closing (950ms) → spinning
+   Execute action: parsing → (2200ms) → awaiting-approval → drawer opens
+   Other actions:  processing → drawer opens immediately
+   handleScored:
+     execute    → executing → (1200ms) → anchoring → (1400ms) → proved
+     score/audit/verify/blindaudit → anchoring → (1400ms) → proved
+     scan/others → (350ms) → scored
+
+   Additions over original:
+   ─────────────────────────────────────
+   - EntityContext (persists entities across route changes)
+   - Remove entity button
+   - Clean numeric score extraction (never passes object to canvas)
+   - Band labels (POOR/FAIR/GOOD/EXCELLENT) for score action
+   - updateEntity() for history tracking
 */
 
-import { useState, useEffect } from "react";
-import { useEntities }        from "../context/EntityContext";
-import TrustBoxCanvas         from "../components/TrustBoxCanvas";
-import AddEntityModal         from "../components/AddEntityModal";
-import ResultsDrawer          from "../components/ResultsDrawer";
-import WalletConnectModal     from "../components/WalletConnectModal";
+import { useState, useEffect }  from "react";
+import { useEntities }           from "../context/EntityContext";
+import TrustBoxCanvas            from "../components/TrustBoxCanvas";
+import AddEntityModal            from "../components/AddEntityModal";
+import ResultsDrawer             from "../components/ResultsDrawer";
+import WalletConnectModal        from "../components/WalletConnectModal";
 import { ACTION_META, ACCENT_HEX, API_URL } from "../constants";
-import { useWalletContext }   from "../context/WalletContext";
+import { useWalletContext }      from "../context/WalletContext";
 
 const PULSE_STATES = ["spinning","processing","executing","anchoring","parsing","awaiting-approval","proved"];
 
@@ -40,7 +52,6 @@ export default function Dashboard() {
     hederaConnected = false,
   } = useWalletContext() as any;
 
-  // ── Entities from context (persists across route changes) ───
   const { entities, addEntity, removeEntity, updateEntity } = useEntities();
   const [selected,       setSelected]       = useState<any>(null);
   const [showAdd,        setShowAdd]        = useState(false);
@@ -51,14 +62,14 @@ export default function Dashboard() {
   const [walletModal,    setWalletModal]    = useState<string | null>(null);
   const [walletCallback, setWalletCallback] = useState<(() => void) | null>(null);
 
-  // Restore selected entity on mount
+  // Restore selected entity on mount (EntityContext persists across routes)
   useEffect(() => {
     if (entities.length > 0 && !selected) {
       setSelected(entities[0]);
       setBoxAccent(entities[0].typeMeta?.accentVar);
       setBoxState("spinning");
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const getEntityName = (e: any) =>
     e.data?.[e.typeMeta?.fields?.[0]?.name] || e.typeMeta?.label || "Entity";
@@ -106,7 +117,10 @@ export default function Dashboard() {
     removeEntity(id);
   };
 
-  /* ── Run action ──────────────────────────────────────── */
+  /* ── Run action ──────────────────────────────────────────
+     Original behavior preserved exactly:
+       execute → parsing (2200ms visual delay) → awaiting-approval → drawer
+       all others → processing → drawer opens immediately              */
   const runAction = (entity: any) => {
     const requires = entity.typeMeta?.requiresWallet;
 
@@ -115,9 +129,18 @@ export default function Dashboard() {
       setBoxAccent(entity.typeMeta.accentVar);
       setBoxScore(null);
 
-      // Drawer owns all phases (preparing → awaiting-approval → signing → done)
-      setBoxState("processing");
-      setDrawer({ action: entity.typeMeta.action, label: getEntityName(entity), entityData: entity.data });
+      if (entity.typeMeta.action === "execute") {
+        // Box animates through parsing first, then drawer opens
+        setBoxState("parsing");
+        setTimeout(() => {
+          setBoxState("awaiting-approval");
+          setDrawer({ action: entity.typeMeta.action, label: getEntityName(entity), entityData: entity.data });
+        }, 2200);
+      } else {
+        // All other actions — drawer opens immediately
+        setBoxState("processing");
+        setDrawer({ action: entity.typeMeta.action, label: getEntityName(entity), entityData: entity.data });
+      }
     };
 
     if (requires) {
@@ -127,9 +150,13 @@ export default function Dashboard() {
     }
   };
 
-  /* ── Scoring / proof callbacks ───────────────────────── */
+  /* ── Scoring / proof callbacks ───────────────────────────
+     Original per-action state machine preserved exactly:
+       execute            → executing → anchoring → proved
+       score/audit/verify → anchoring → proved
+       scan/others        → scored                          */
   const handleScored = (rawScore: any) => {
-    // Extract a clean numeric value — never pass object to canvas
+    // Extract clean numeric value — never pass an object to canvas
     let cleanScore: number | null = null;
     if (typeof rawScore === "number") {
       cleanScore = rawScore;
@@ -138,21 +165,30 @@ export default function Dashboard() {
       cleanScore = typeof v === "number" ? v : null;
     }
     setBoxScore(cleanScore);
+
     const action = drawer?.action;
 
-    // ── Record in history ─────────────────────────────────────
-    // Update the entity in the list with a scored status
+    // Track in entity history
     if (drawer && selected?.id) {
       updateEntity(selected.id, {
-        lastAction: action,
-        lastScore: cleanScore,
+        lastAction:   action,
+        lastScore:    cleanScore,
         lastActionAt: new Date().toISOString(),
       });
     }
 
-    // HITL actions (verify/execute) complete via drawer → same animation
-    setBoxState("anchoring");
-    setTimeout(() => setBoxState("proved"), 1400);
+    // ── Per-action animation state machine (original behavior) ──
+    if (action === "execute") {
+      setBoxState("executing");
+      setTimeout(() => setBoxState("anchoring"), 1200);
+      setTimeout(() => setBoxState("proved"),    2600);
+    } else if (["score","blindaudit","verify","audit"].includes(action)) {
+      setBoxState("anchoring");
+      setTimeout(() => setBoxState("proved"), 1400);
+    } else {
+      // scan and any future actions
+      setTimeout(() => setBoxState("scored"), 350);
+    }
   };
 
   const closeDrawer = () => setDrawer(null);
@@ -160,11 +196,7 @@ export default function Dashboard() {
   /* ── Dynamic box state label ─────────────────────────── */
   const boxStateLabel = () => {
     if (boxState === "processing") return drawer ? `${(ACTION_META as any)[drawer.action]?.label}…` : "Processing…";
-    if (boxState === "scored") {
-      const BAND = {1:"POOR",2:"FAIR",3:"GOOD",4:"EXCELLENT"};
-      const bandName = (BAND as any)[boxScore];
-      return bandName ? `Score: ${bandName}` : (boxScore !== null ? `Score: ${boxScore}/100` : "Scored");
-    }
+    if (boxState === "scored")     return `Score: ${boxScore}/100`;
     if (boxState === "proved") {
       if (drawer?.action === "verify")     return "ERC-8004 Minted ✓";
       if (drawer?.action === "execute")    return "Intent Signed & Executed ✓";
@@ -174,7 +206,7 @@ export default function Dashboard() {
         const BAND: Record<number,string> = {1:"POOR",2:"FAIR",3:"GOOD",4:"EXCELLENT"};
         return boxScore !== null ? `ZK Score: ${BAND[boxScore] ?? boxScore} ✓` : "ZK Score Proved ✓";
       }
-      return "Proved ✓";
+      return `Proved: ${boxScore ?? "✓"}`;
     }
     return STATE_LABEL[boxState] || boxState;
   };
@@ -225,9 +257,9 @@ export default function Dashboard() {
                            textTransform:"uppercase", color: boxLabelColor() }}>
               <span style={{ width:5, height:5, borderRadius:"50%", background:"currentColor",
                              display:"inline-block", animation:"pulseDot 1s ease infinite" }}/>
-              {boxState === "anchoring"                                ? "Anchoring to chain…"
-             : drawer?.action === "verify" && boxState === "processing" ? "Preparing credential…"
-             : drawer?.action === "execute" && boxState === "processing"? "Parsing intent…"
+              {boxState === "parsing"    ? "Parsing Intent…"
+             : boxState === "anchoring" ? "Anchoring…"
+             : boxState === "executing" ? "Executing…"
              : (drawer?.action?.toUpperCase() ?? "") + " IN PROGRESS"}
             </span>
           )}
@@ -235,11 +267,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/*
-        FIX #2: .dashboard-grid class — minmax(0,1fr) 420px, mobile 1-col via CSS
-        FIX #1: left panel height + overflow handled by .dashboard-left class
-        FIX #3: right panel splits sticky wrapper from scroll container
-      */}
       <div className="dashboard-grid relative z-10">
 
         {/* ── LEFT: entity list ── */}
@@ -364,10 +391,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/*
-          FIX #3: sticky wrapper (no overflow) wraps the scroll container.
-          sticky + overflow-y:auto on the same element cancels sticky.
-        */}
+        {/* ── RIGHT: box stage ── */}
         <div className="dashboard-right-sticky">
           <div className="dashboard-right-scroll">
 

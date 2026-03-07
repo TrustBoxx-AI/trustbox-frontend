@@ -18,7 +18,7 @@ export default function App() {
         <EntityProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/"          element={<Landing />} />
+              <Route path="/"          element={<><NavBar /><Landing /></>} />
               <Route path="/dashboard" element={<><NavBar /><Dashboard /></>} />
               <Route path="/history"   element={<><NavBar /><HistoryPage /></>} />
               <Route path="/market"    element={<><NavBar /><Marketplace /></>} />
