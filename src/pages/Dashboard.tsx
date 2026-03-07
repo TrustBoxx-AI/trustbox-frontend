@@ -419,13 +419,13 @@ export default function Dashboard() {
                 entityAccentVar={boxAccent}
               />
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
-                   style={{ width:295, height:295, border:"1px solid rgba(255,255,255,.035)" }}/>
+                   style={{ width:340, height:340, border:"1px solid rgba(255,255,255,.035)" }}/>
 
               {boxState === "anchoring" && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div style={{ width:310, height:310, borderRadius:"50%", border:"1px solid #8259EF44",
+                  <div style={{ width:355, height:355, borderRadius:"50%", border:"1px solid #8259EF44",
                                 animation:"spinCW 3s linear infinite", position:"absolute" }}/>
-                  <div style={{ width:330, height:330, borderRadius:"50%", border:"1px solid #E8414222",
+                  <div style={{ width:375, height:375, borderRadius:"50%", border:"1px solid #E8414222",
                                 animation:"spinCCW 5s linear infinite", position:"absolute" }}/>
                 </div>
               )}
