@@ -28,6 +28,8 @@ import ResultsDrawer             from "../components/ResultsDrawer";
 import WalletConnectModal        from "../components/WalletConnectModal";
 import { ACTION_META, ACCENT_HEX, API_URL } from "../constants";
 import { useWalletContext }      from "../context/WalletContext";
+import { useAuthContext }        from "../context/AuthContext";
+import { useHistory }            from "../hooks/useHistory";
 
 const PULSE_STATES = ["spinning","processing","executing","anchoring","parsing","awaiting-approval","proved"];
 
@@ -51,6 +53,9 @@ export default function Dashboard() {
     isConnected:   evmConnected,
     hederaConnected = false,
   } = useWalletContext() as any;
+
+  const { token }   = useAuthContext() as any;
+  const { fetchAll } = useHistory(token);
 
   const { entities, addEntity, removeEntity, updateEntity } = useEntities();
   const [selected,       setSelected]       = useState<any>(null);
@@ -191,7 +196,7 @@ export default function Dashboard() {
     }
   };
 
-  const closeDrawer = () => setDrawer(null);
+  const closeDrawer = () => { setDrawer(null); fetchAll(); };
 
   /* ── Dynamic box state label ─────────────────────────── */
   const boxStateLabel = () => {
@@ -241,11 +246,11 @@ export default function Dashboard() {
       <div className="relative z-10 flex items-center justify-between px-10 py-4
                       border-b border-white/[0.055] bg-[#0b0f1a]">
         <div>
-          <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".22em",
+          <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, letterSpacing:".22em",
                       textTransform:"uppercase", color:"#52b6ff", marginBottom:6 }}>
             TrustBox Dashboard
           </p>
-          <h1 style={{ fontFamily:"'IBM Plex Serif',serif", fontSize:20, fontWeight:300 }}>
+          <h1 style={{ fontFamily:"'IBM Plex Serif',serif", fontSize:24, fontWeight:300 }}>
             Your AI Trust Registry
           </h1>
         </div>
@@ -253,7 +258,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-4">
           {["processing","executing","anchoring","parsing"].includes(boxState) && (
             <span className="flex items-center gap-2"
-                  style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".16em",
+                  style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, letterSpacing:".16em",
                            textTransform:"uppercase", color: boxLabelColor() }}>
               <span style={{ width:5, height:5, borderRadius:"50%", background:"currentColor",
                              display:"inline-block", animation:"pulseDot 1s ease infinite" }}/>
@@ -281,15 +286,15 @@ export default function Dashboard() {
                   <line x1="8" y1="22" x2="64" y2="22" stroke="#52b6ff" strokeWidth="1"/>
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center" style={{ paddingTop:18 }}>
-                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:"rgba(82,182,255,.2)" }}>[ ]</span>
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:13, color:"rgba(82,182,255,.2)" }}>[ ]</span>
                 </div>
               </div>
 
-              <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".2em",
+              <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, letterSpacing:".2em",
                           textTransform:"uppercase", color:"rgba(255,255,255,.18)", marginBottom:12 }}>
                 The Box is empty
               </p>
-              <p style={{ fontSize:13, color:"rgba(255,255,255,.2)", lineHeight:1.7, maxWidth:320, marginBottom:24 }}>
+              <p style={{ fontSize:15, color:"rgba(255,255,255,.2)", lineHeight:1.7, maxWidth:320, marginBottom:24 }}>
                 Add an AI agent, credit profile, code bundle, or intent command to get started.
               </p>
 
@@ -301,7 +306,7 @@ export default function Dashboard() {
                   { label:"◈ AI Agent",            color:"#52b6ff" },
                 ].map(c => (
                   <div key={c.label}
-                       style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".1em",
+                       style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, letterSpacing:".1em",
                                 color:c.color, border:`1px solid ${c.color}33`, padding:"4px 10px", opacity:.55 }}>
                     {c.label}
                   </div>
@@ -317,7 +322,7 @@ export default function Dashboard() {
               <div className="grid px-8 py-2.5 border-b border-white/[0.055] bg-[#0f1420]"
                    style={{ gridTemplateColumns:"1fr 140px 100px" }}>
                 {["Entity","Type","Action"].map(h => (
-                  <span key={h} style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8,
+                  <span key={h} style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11,
                                          letterSpacing:".18em", textTransform:"uppercase",
                                          color:"rgba(255,255,255,.18)" }}>{h}</span>
                 ))}
@@ -335,20 +340,20 @@ export default function Dashboard() {
                        style={{ gridTemplateColumns:"1fr 140px 100px", background: isSel ? `${accent}0d` : "transparent" }}>
 
                     <div>
-                      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, color:"#e8eaf0", marginBottom:2 }}>{name}</div>
+                      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:15, color:"#e8eaf0", marginBottom:2 }}>{name}</div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:"rgba(255,255,255,.2)" }}>
+                        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, color:"rgba(255,255,255,.2)" }}>
                           {new Date(entity.addedAt).toLocaleTimeString()} · #{String(entity.id).slice(-4)}
                         </span>
                         {entity.typeMeta.badge && (
-                          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, letterSpacing:".08em",
+                          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:".08em",
                                          color:entity.typeMeta.badgeColor, border:`1px solid ${entity.typeMeta.badgeColor}44`,
                                          padding:"1px 5px" }}>
                             {entity.typeMeta.badge}
                           </span>
                         )}
                         {entity.typeMeta.chainTarget && (
-                          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, color:"rgba(255,255,255,.2)" }}>
+                          <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:"rgba(255,255,255,.2)" }}>
                             {entity.typeMeta.chainTarget === "both"      ? "▲ + ℏ"
                            : entity.typeMeta.chainTarget === "hedera"    ? "ℏ"
                            : entity.typeMeta.chainTarget === "avalanche" ? "▲"
@@ -359,7 +364,7 @@ export default function Dashboard() {
                     </div>
 
                     <div>
-                      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".08em",
+                      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, letterSpacing:".08em",
                                      color:accent, border:`1px solid ${accent}33`, padding:"2px 7px" }}>
                         {entity.typeMeta.icon} {entity.typeMeta.label.split(" ").slice(0,2).join(" ")}
                       </span>
@@ -367,7 +372,7 @@ export default function Dashboard() {
 
                     <div onClick={(e: any) => e.stopPropagation()} style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <button onClick={() => runAction(entity)}
-                              style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".08em",
+                              style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, letterSpacing:".08em",
                                        textTransform:"uppercase", color:meta?.color,
                                        border:`1px solid ${meta?.color}44`, background:"transparent",
                                        padding:"4px 9px", cursor:"pointer", transition:"background .15s" }}
@@ -378,7 +383,7 @@ export default function Dashboard() {
                       <button onClick={() => handleRemoveEntity(entity.id)}
                               title="Remove"
                               style={{ background:"none", border:"none", cursor:"pointer",
-                                       color:"rgba(255,255,255,.2)", fontSize:13, padding:"2px 4px", lineHeight:1 }}
+                                       color:"rgba(255,255,255,.2)", fontSize:15, padding:"2px 4px", lineHeight:1 }}
                               onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#ff4d6a"}
                               onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,.2)"}>
                         ✕
@@ -396,12 +401,12 @@ export default function Dashboard() {
           <div className="dashboard-right-scroll">
 
             <div className="w-full flex items-center justify-between">
-              <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".2em",
+              <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, letterSpacing:".2em",
                              textTransform:"uppercase", color:"rgba(255,255,255,.18)" }}>
                 TrustBox
               </span>
               <span className="flex items-center gap-1.5"
-                    style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".16em",
+                    style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, letterSpacing:".16em",
                              textTransform:"uppercase", color: boxLabelColor() }}>
                 {PULSE_STATES.includes(boxState) && (
                   <span style={{ width:5, height:5, borderRadius:"50%", background:"currentColor",
@@ -450,24 +455,24 @@ export default function Dashboard() {
             {selected ? (
               <div className="w-full border border-white/[0.055] bg-[#0b0f1a]">
                 <div className="px-5 py-3 border-b border-white/[0.055] bg-[#0f1420] flex items-center justify-between">
-                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".18em",
+                  <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, letterSpacing:".18em",
                                  textTransform:"uppercase", color:"rgba(255,255,255,.22)" }}>Selected</span>
                   <div className="flex items-center gap-2">
                     {selected.typeMeta.badge && (
-                      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, letterSpacing:".08em",
+                      <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:".08em",
                                      color:selected.typeMeta.badgeColor,
                                      border:`1px solid ${selected.typeMeta.badgeColor}44`, padding:"1px 5px" }}>
                         {selected.typeMeta.badge}
                       </span>
                     )}
-                    <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10,
+                    <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:13,
                                    color:(ACCENT_HEX as any)[selected.typeMeta.accentVar] }}>
                       {selected.typeMeta.icon} {selected.typeMeta.label}
                     </span>
                   </div>
                 </div>
                 <div className="px-5 py-4">
-                  <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, color:"#e8eaf0", marginBottom:14 }}>
+                  <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:15, color:"#e8eaf0", marginBottom:14 }}>
                     {getEntityName(selected)}
                   </p>
                   <button onClick={() => runAction(selected)}
@@ -477,11 +482,11 @@ export default function Dashboard() {
                           onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${(ACTION_META as any)[selected.typeMeta.action]?.color}18`}
                           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = `${(ACTION_META as any)[selected.typeMeta.action]?.color}09`}>
                     <div>
-                      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, fontWeight:500, marginBottom:3,
+                      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:15, fontWeight:500, marginBottom:3,
                                     color:(ACTION_META as any)[selected.typeMeta.action]?.color }}>
                         {selected.typeMeta.actionIcon} {selected.typeMeta.actionLabel}
                       </div>
-                      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:"rgba(255,255,255,.25)" }}>
+                      <div style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, color:"rgba(255,255,255,.25)" }}>
                         {selected.typeMeta.action === "verify"     && "Mint ERC-8004 credential NFT on Avalanche"}
                         {selected.typeMeta.action === "audit"      && "Anchor report to AuditRegistry.sol"}
                         {selected.typeMeta.action === "scan"       && "Behavioural & security scan"}
@@ -490,11 +495,11 @@ export default function Dashboard() {
                         {selected.typeMeta.action === "execute"    && "NL → verified intent → on-chain execution"}
                       </div>
                     </div>
-                    <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:"rgba(255,255,255,.2)" }}>→</span>
+                    <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:13, color:"rgba(255,255,255,.2)" }}>→</span>
                   </button>
 
                   {selected.typeMeta.requiresWallet && (
-                    <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.18)", marginTop:8 }}>
+                    <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:"rgba(255,255,255,.18)", marginTop:8 }}>
                       {selected.typeMeta.requiresWallet === "hedera" ? "ℏ Hedera wallet required"
                      : selected.typeMeta.requiresWallet === "evm"    ? "▲ MetaMask required"
                      : "▲ MetaMask + ℏ HashPack required"} — connected on action
@@ -504,7 +509,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="w-full border border-white/[0.04] px-5 py-5 text-center">
-                <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".18em",
+                <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:12, letterSpacing:".18em",
                             textTransform:"uppercase", color:"rgba(255,255,255,.15)" }}>
                   Add an entity to begin
                 </p>
@@ -543,7 +548,7 @@ function ChainPill({ icon, label, color }: { icon: string; label: string; color:
   return (
     <div className="flex items-center gap-1.5 px-2.5 py-1 border"
          style={{ borderColor:`${color}44`, background:`${color}0d`,
-                  fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color }}>
+                  fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color }}>
       <span style={{ width:4, height:4, borderRadius:"50%", background:color,
                      display:"inline-block", animation:"pulseDot 1.5s ease infinite" }}/>
       {icon} {label}

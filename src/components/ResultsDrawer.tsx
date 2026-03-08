@@ -28,7 +28,7 @@ const ACTION_CONFIG: Record<string, { label: string; color: string; icon: string
   scan:       { label:"Security Scan",   color:"#ff6eb4", icon:"⚙"  },
 }
 
-const HITL_ACTIONS = ["verify", "execute"]
+const HITL_ACTIONS = ["verify", "execute", "audit"]
 
 const AUTO_ENDPOINTS: Record<string, string> = {
   score:      "/api/score",
@@ -45,6 +45,13 @@ function buildPreparePayload(action: string, entityData: any, walletAddress: str
     operator:     entityData.operator     ?? walletAddress,
     capabilities: entityData.capabilities ?? "Audit, Verification",
     environment:  entityData.environment  ?? "development",
+  }
+  if (action === "audit") return {
+    walletAddress,
+    contractAddress: entityData.contractAddress?.trim() || "0x0000000000000000000000000000000000000000",
+    contractName:    entityData.contractName?.trim()    || "Unknown Contract",
+    chain:           entityData.chain                   || "avalanche-fuji",
+    deployer:        entityData.deployer                || walletAddress,
   }
   // Normalise category — accept any loose form
   function pickCategory(v: string): string {
@@ -120,7 +127,7 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
   async function prepareStep() {
     setPhase("preparing"); setErrMsg(null)
     try {
-      const endpoint = action === "verify" ? "/api/verify/prepare" : "/api/intent/parse"
+      const endpoint = action === "verify" ? "/api/verify/prepare" : action === "audit" ? "/api/audit/prepare" : "/api/intent/parse"
       const res  = await fetch(`${API_URL}${endpoint}`, {
         method:"POST", headers:authHeaders,
         body: JSON.stringify(buildPreparePayload(action, entityData, walletAddress)),
@@ -151,6 +158,23 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
           approvalSignature: signature,
           trustScore:        prepared.trustScore,
         }
+      } else if (action === "audit") {
+        // Sign the reportHash returned from /prepare — proves auditor reviewed findings
+        signature     = await signWithMetaMask(prepared.reportHash, walletAddress)
+        submitPayload = {
+          walletAddress,
+          contractAddress: entityData?.contractAddress?.trim() || prepared.contractAddress || "0x0000000000000000000000000000000000000000",
+          contractName:    entityData?.contractName?.trim()    || prepared.contractName    || "Unknown Contract",
+          chain:           entityData?.chain                   || "avalanche-fuji",
+          deployer:        entityData?.deployer                || walletAddress,
+          // Pre-computed in /prepare — pass through so backend skips re-analysis
+          findings:    prepared.findings,
+          score:       prepared.score,
+          reportHash:  prepared.reportHash,
+          merkleRoot:  prepared.merkleRoot,
+          reportCID:   prepared.reportCID,
+          auditorSig:  signature,
+        }
       } else {
         signature     = await signWithMetaMask(prepared.specHash, walletAddress)
         function pickCat(v: string): string {
@@ -172,7 +196,7 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
       }
 
       setPhase("submitting")
-      const endpoint = action === "verify" ? "/api/verify/mint" : "/api/intent/submit"
+      const endpoint = action === "verify" ? "/api/verify/mint" : action === "audit" ? "/api/audit" : "/api/intent/submit"
       const res  = await fetch(`${API_URL}${endpoint}`, {
         method:"POST", headers:authHeaders, body:JSON.stringify(submitPayload),
       })
@@ -339,6 +363,37 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
                 </div>
               </div>
 
+              {action === "audit" && prepared && (
+                <div style={{ marginBottom:20 }}>
+                  <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, letterSpacing:".18em", textTransform:"uppercase", color:"rgba(255,255,255,.2)", marginBottom:12 }}>Findings Report</p>
+                  {(prepared.findings ?? []).map((f: any) => (
+                    <div key={f.id} style={{ marginBottom:10, padding:"10px 12px", border:"1px solid rgba(255,255,255,.06)", background:"rgba(0,0,0,.2)" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, padding:"1px 6px",
+                          background: f.severity==="critical"?"rgba(255,77,106,.15)":f.severity==="high"?"rgba(255,100,50,.12)":f.severity==="medium"?"rgba(255,179,71,.12)":f.severity==="low"?"rgba(82,182,255,.1)":"rgba(255,255,255,.06)",
+                          color:      f.severity==="critical"?"#ff4d6a":f.severity==="high"?"#ff6432":f.severity==="medium"?"#ffb347":f.severity==="low"?"#52b6ff":"rgba(255,255,255,.35)",
+                          border:     `1px solid ${f.severity==="critical"?"#ff4d6a44":f.severity==="high"?"#ff643244":f.severity==="medium"?"#ffb34744":f.severity==="low"?"#52b6ff44":"rgba(255,255,255,.1)"}`,
+                          textTransform:"uppercase", letterSpacing:".1em" }}>
+                          {f.severity}
+                        </span>
+                        <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:"#e8eaf0" }}>{f.title}</span>
+                      </div>
+                      <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:10, color:"rgba(255,255,255,.35)", lineHeight:1.6, marginBottom:0 }}>{f.detail}</p>
+                      {f.line && <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, color:"rgba(255,255,255,.2)", marginTop:3 }}>Line {f.line}</p>}
+                    </div>
+                  ))}
+                  <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:14, padding:"10px 14px", background:"rgba(255,179,71,.06)", border:"1px solid #ffb34733" }}>
+                    <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:11, color:"#ffb347" }}>Score</span>
+                    <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:22, color: prepared.score>=80?"#00e5c0":prepared.score>=60?"#ffb347":"#ff4d6a", marginLeft:"auto" }}>{prepared.score}/100</span>
+                  </div>
+                  <div style={{ marginTop:12 }}>
+                    {[["Merkle Root", prepared.merkleRoot],["Report CID", prepared.reportCID]].filter(([,v])=>v).map(([k,v])=>(
+                      <KVRow key={k as string} label={k as string} value={v as string}/>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {action === "verify" && (
                 <div style={{ marginBottom:20 }}>
                   <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, letterSpacing:".18em", textTransform:"uppercase", color:"rgba(255,255,255,.2)", marginBottom:10 }}>Agent Credential Summary</p>
@@ -377,7 +432,7 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${cfg.color}22`}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = `${cfg.color}12`}>
                 <span>🦊</span>
-                <span>{action === "verify" ? "Approve & Sign — Mint ERC-8004" : "Approve & Sign — Execute Intent"}</span>
+                <span>{action === "verify" ? "Approve & Sign — Mint ERC-8004" : action === "audit" ? "Approve & Anchor on Avalanche" : "Approve & Sign — Execute Intent"}</span>
               </button>
               <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:8, color:"rgba(255,255,255,.18)", textAlign:"center", marginTop:10 }}>
                 MetaMask will open. This signature authorises the on-chain transaction.
