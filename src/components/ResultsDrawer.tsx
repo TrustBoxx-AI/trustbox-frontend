@@ -46,11 +46,18 @@ function buildPreparePayload(action: string, entityData: any, walletAddress: str
     capabilities: entityData.capabilities ?? "Audit, Verification",
     environment:  entityData.environment  ?? "development",
   }
-  const VALID = ["Travel Booking","Portfolio Rebalance","Contributor Tip"]
+  // Normalise category — accept any loose form
+  function pickCategory(v: string): string {
+    const s = (v ?? "").toLowerCase();
+    if (s.includes("portfolio") || s.includes("rebalance")) return "Portfolio Rebalance";
+    if (s.includes("tip") || s.includes("contributor"))     return "Contributor Tip";
+    return "Travel Booking";
+  }
+  const rawText = entityData.nlText ?? entityData.intentText ?? entityData.description ?? "";
   return {
     walletAddress,
-    nlText:   entityData.nlText ?? entityData.intentText ?? "",
-    category: VALID.includes(entityData.category) ? entityData.category : "Travel Booking",
+    nlText:   rawText.trim() || "Please describe your intent",
+    category: pickCategory(entityData.category ?? ""),
   }
 }
 
@@ -64,10 +71,10 @@ function buildAutoPayload(action: string, entityData: any, walletAddress: string
     }
     case "audit": return {
       walletAddress,
-      contractAddress: entityData.contractAddress ?? "",
-      contractName:    entityData.contractName    ?? "Unknown Contract",
-      chain:           entityData.chain           ?? "avalanche-fuji",
-      deployer:        entityData.deployer        ?? walletAddress,
+      contractAddress: entityData.contractAddress?.trim() || "0x0000000000000000000000000000000000000000",
+      contractName:    entityData.contractName?.trim()    || "Unknown Contract",
+      chain:           entityData.chain                   || "avalanche-fuji",
+      deployer:        entityData.deployer                || walletAddress,
     }
     case "blindaudit": return {
       walletAddress,
@@ -146,14 +153,20 @@ export default function ResultsDrawer({ action, entityLabel, entityData, onClose
         }
       } else {
         signature     = await signWithMetaMask(prepared.specHash, walletAddress)
+        function pickCat(v: string): string {
+          const s = (v ?? "").toLowerCase();
+          if (s.includes("portfolio") || s.includes("rebalance")) return "Portfolio Rebalance";
+          if (s.includes("tip") || s.includes("contributor"))     return "Contributor Tip";
+          return "Travel Booking";
+        }
         submitPayload = {
           walletAddress,
-          nlHash:    prepared.nlHash,
-          specHash:  prepared.specHash,
+          nlHash:    prepared.nlHash    ?? ("0x" + "0".repeat(64)),
+          specHash:  prepared.specHash  ?? ("0x" + "0".repeat(64)),
           specJson:  typeof prepared.specJson === "string"
             ? prepared.specJson
             : JSON.stringify(prepared.specJson ?? prepared.spec ?? {}),
-          category:  entityData.category ?? "Travel Booking",
+          category:  pickCat(entityData.category ?? prepared.category ?? ""),
           signature,
         }
       }
@@ -494,3 +507,14 @@ function ExplorerBtn({ href, label }: { href:string; label:string }) {
     </a>
   )
 }
+
+// ── Keep-alive ping (Render free tier spins down after 15min) ─
+// Call once when the app mounts to wake the backend before the
+// user tries to run an action. Added at module level so it fires
+// on the first import, not per-component mount.
+;(function pingBackend() {
+  try {
+    fetch(`${API_URL}/health`, { method: "GET", cache: "no-store" })
+      .catch(() => { /* silent — just waking Render */ });
+  } catch { /* ignore */ }
+})();

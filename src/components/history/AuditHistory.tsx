@@ -1,163 +1,100 @@
-/* components/history/auditHistory.tsx — TrustBox */
+/* components/history/AuditHistory.tsx — TrustBox */
 
-import type { AuditRecord, BlindAuditRecord } from "../../hooks/useHistory";
-import { FUJI_EXPLORER } from "../../constants";
+import { AuditRecord, BlindAuditRecord } from "../../hooks/useHistory"
+import { EmptyState, formatDate, StatusBadge } from "../../utils/ui"
 
 interface Props {
-  audits:      AuditRecord[];
-  blindAudits: BlindAuditRecord[];
+  audits:      AuditRecord[]
+  blindAudits: BlindAuditRecord[]
 }
 
 export function AuditHistory({ audits, blindAudits }: Props) {
-  if (!audits.length && !blindAudits.length) return <Empty text="No audits yet"/>;
+  const hasAudits = audits.length > 0 || blindAudits.length > 0
+  if (!hasAudits) {
+    return <EmptyState icon="◈" text="No audits submitted yet" sub="Submit a contract to get started" />
+  }
 
   return (
-    <div className="flex flex-col gap-8">
-
-      {/* ── Contract audits ── */}
+    <div className="flex flex-col gap-4">
       {audits.length > 0 && (
-        <div>
-          <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".18em",
-                      textTransform:"uppercase", color:"rgba(255,255,255,.25)", marginBottom:12 }}>
+        <div className="flex flex-col gap-2">
+          <p className="text-gray-400 font-medium" style={{ fontSize: "var(--font-sm)" }}>
             Contract Audits
           </p>
-          <table className="tb-table">
-            <thead>
-              <tr>
-                <th>Contract</th>
-                <th>Score</th>
-                <th>Chain</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {audits.map(a => {
-                /* score field — backend may send either `score` or `audit_score` */
-                const sc = a.score ?? a.audit_score ?? 0;
-                const scoreColor = sc >= 80 ? "#00e5c0" : sc >= 60 ? "#ffb347" : "#ff4d6a";
-                return (
-                  <tr key={a.id}>
-                    <td>
-                      <div style={{ color:"#e8eaf0" }}>{a.contract_name || "Unknown"}</div>
-                      <div style={{ fontSize:9, color:"rgba(255,255,255,.25)",
-                                    fontFamily:"'IBM Plex Mono',monospace" }}>
-                        {a.contract_address?.slice(0,14)}…
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ color:scoreColor }}>{sc}/100</span>
-                    </td>
-                    <td>{a.chain ?? "fuji"}</td>
-                    <td><StatusChip status={a.status}/></td>
-                    <td>{fmtDate(a.created_at)}</td>
-                    <td>
-                      {a.explorer_url
-                        ? <ExpLink href={a.explorer_url}/>
-                        : a.tx_hash
-                          ? <ExpLink href={`${FUJI_EXPLORER}/tx/${a.tx_hash}`}/>
-                          : null
-                      }
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {audits.map(audit => (
+            <div key={audit.id} className="rounded-xl p-4 bg-white/5 border border-white/10">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <p className="text-gray-200 font-medium" style={{ fontSize: "var(--font-sm)" }}>
+                    {audit.contract_name ?? "Unknown Contract"}
+                  </p>
+                  <p className="text-gray-500 font-mono" style={{ fontSize: "var(--font-xs)" }}>
+                    {audit.contract_address?.slice(0, 10)}…{audit.contract_address?.slice(-6)}
+                  </p>
+                  <p className="text-gray-500 mt-1" style={{ fontSize: "var(--font-xs)" }}>
+                    {audit.chain} · {formatDate(audit.created_at)}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  {audit.score !== null && audit.score !== undefined && (
+                    <span className={`font-bold ${audit.score >= 80 ? "text-green-400" : audit.score >= 60 ? "text-yellow-400" : "text-red-400"}`}
+                          style={{ fontSize: "var(--font-lg)" }}>
+                      {audit.score}/100
+                    </span>
+                  )}
+                  <StatusBadge status={audit.status} />
+                  {audit.explorer_url && (
+                    <a href={audit.explorer_url} target="_blank" rel="noreferrer"
+                       className="text-blue-400 hover:text-blue-300"
+                       style={{ fontSize: "var(--font-xs)" }}>
+                      Explorer ↗
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* ── Blind TEE audits ── */}
       {blindAudits.length > 0 && (
-        <div>
-          <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".18em",
-                      textTransform:"uppercase", color:"rgba(255,255,255,.25)", marginBottom:12 }}>
-            Blind TEE Audits
+        <div className="flex flex-col gap-2">
+          <p className="text-gray-400 font-medium" style={{ fontSize: "var(--font-sm)" }}>
+            🔒 Blind TEE Audits
           </p>
-          <table className="tb-table">
-            <thead>
-              <tr>
-                <th>Project</th>
-                <th>Contract</th>
-                <th>TEE Provider</th>
-                <th>Attestation</th>
-                <th>Valid</th>
-                <th>Status</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {blindAudits.map(a => (
-                <tr key={a.id}>
-                  <td>{a.project_name || "—"}</td>
-                  <td>
-                    <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9,
-                                   color:"rgba(255,255,255,.4)" }}>
-                      {a.contract_addr?.slice(0,10) ?? "—"}…
+          {blindAudits.map(audit => (
+            <div key={audit.id}
+                 className="rounded-xl p-4 bg-purple-900/10 border border-purple-700/30">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <p className="text-gray-200 font-medium" style={{ fontSize: "var(--font-sm)" }}>
+                    {audit.project_name ?? audit.contract_addr}
+                  </p>
+                  <p className="text-gray-500" style={{ fontSize: "var(--font-xs)" }}>
+                    {audit.tee_provider}
+                  </p>
+                  <p className="text-gray-500 mt-1 font-mono" style={{ fontSize: "var(--font-xs)" }}>
+                    Job: {audit.job_id?.slice(0, 16)}…
+                  </p>
+                  <p className="text-gray-500" style={{ fontSize: "var(--font-xs)" }}>
+                    {formatDate(audit.created_at)}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  {audit.valid !== null && audit.valid !== undefined && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      audit.valid ? "text-green-400 bg-green-900/30" : "text-red-400 bg-red-900/30"
+                    }`}>
+                      {audit.valid ? "✓ Attested" : "✗ Failed"}
                     </span>
-                  </td>
-                  <td><span style={{ color:"#a78bfa" }}>{a.tee_provider ?? "Phala"}</span></td>
-                  <td>
-                    <span style={{ color: a.attestation_status === "attested" ? "#00e5c0" : "#ff4d6a" }}>
-                      {a.attestation_status === "attested" ? "✓ Attested" : "✗ Failed"}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{ color: a.valid ? "#00e5c0" : "#ff4d6a" }}>
-                      {a.valid ? "✓" : "✗"}
-                    </span>
-                  </td>
-                  <td><StatusChip status={a.status}/></td>
-                  <td>{fmtDate(a.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  )}
+                  <StatusBadge status={audit.status} />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
-  );
-}
-
-function ExpLink({ href }: { href: string }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer"
-       style={{ color:"#52b6ff", fontSize:9, fontFamily:"'IBM Plex Mono',monospace" }}>
-      ↗
-    </a>
-  );
-}
-
-function StatusChip({ status }: { status: string }) {
-  const MAP: Record<string,string> = {
-    complete:"#00e5c0", proved:"#00e5c0", active:"#00e5c0",
-    failed:"#ff4d6a",   offline:"#ff4d6a",
-    pending:"#ffb347",  running:"#52b6ff",
-    submitted:"#a78bfa",
-  };
-  const color = MAP[status] ?? "rgba(255,255,255,.3)";
-  return (
-    <span style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:7, letterSpacing:".1em",
-                   textTransform:"uppercase", color, border:`1px solid ${color}44`,
-                   padding:"2px 7px", background:`${color}08` }}>
-      {status}
-    </span>
-  );
-}
-
-function Empty({ text }: { text: string }) {
-  return (
-    <div className="flex items-center justify-center py-24">
-      <p style={{ fontFamily:"'IBM Plex Mono',monospace", fontSize:9, letterSpacing:".2em",
-                  textTransform:"uppercase", color:"rgba(255,255,255,.18)" }}>
-        {text}
-      </p>
-    </div>
-  );
-}
-
-function fmtDate(d: string) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" });
+  )
 }
