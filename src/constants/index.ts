@@ -1,7 +1,4 @@
-/* src/constants/index.ts — TrustBox frontend constants
-   Single source of truth. Replaces index.jsx.
-   Original exports preserved + new ones added.
-*/
+
 
 /* ── Backend URL ─────────────────────────────────────── */
 export const API_URL =
