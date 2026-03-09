@@ -1,6 +1,4 @@
-/* context/AuthContext.tsx — TrustBox
-   Wraps useAuth hook into React context.
-*/
+
 
 import { createContext, useContext, type ReactNode } from "react";
 import { useAuth, type AuthState, type AuthActions } from "../hooks/useAuth";
