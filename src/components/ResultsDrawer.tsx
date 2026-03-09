@@ -1,9 +1,3 @@
-/* components/ResultsDrawer.tsx — TrustBox
-   Human-in-the-loop flow for verify + execute:
-     preparing → awaiting-approval → signing → submitting → done
-   Automatic flow for score, audit, blindaudit, scan:
-     running → done
-*/
 
 import { useState, useEffect } from "react"
 import { API_URL, FUJI_EXPLORER, HEDERA_EXPLORER } from "../constants"
