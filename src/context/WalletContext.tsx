@@ -1,10 +1,3 @@
-/* context/WalletContext.tsx — TrustBox
-   Wraps the useWallet hook into React context.
-   Exports:
-     WalletProvider        — wrap the app
-     useWalletContext()    — full context hook
-     useWallet()           — alias (Dashboard.jsx uses this name)
-*/
 
 import {
   createContext, useContext, type ReactNode,
