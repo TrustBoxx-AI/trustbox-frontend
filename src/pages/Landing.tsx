@@ -1,11 +1,4 @@
-/* Landing.tsx — TrustBox marketing page
-   Exact 1:1 conversion from Landing.jsx.
-   Changes made:
-     1. `setRoute` prop removed → replaced with useNavigate() hook
-     2. Import: "../constants" (the folder with index.jsx)
-     3. TypeScript types added where needed (as any casts on ENTITY_TYPES)
-     4. opacity:0 on animated elements removed (animation fill-mode "both" handles it)
-*/
+
 
 import { useNavigate }                           from "react-router-dom";
 import Ticker                                    from "../components/Ticker";
