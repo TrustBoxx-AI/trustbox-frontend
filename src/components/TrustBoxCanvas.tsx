@@ -1,17 +1,4 @@
-/* components/TrustBoxCanvas.tsx — TrustBox
-   Wireframe 3-D box matching the design in fk2.png.
 
-   Key design decisions:
-   ─────────────────────────────────────────────────────────────
-   • All 12 body edges drawn as glowing lines (not filled faces)
-   • Faces rendered with very low alpha (0.04-0.07) for depth only
-   • Lid is a separate 12-edge frame that lifts on open states
-   • Painter's algorithm: back faces first, front faces last
-   • All state + score reads via refs → RAF loop NEVER restarts
-     so open/close animations are never interrupted
-   • Canvas is 360×360 — matches right-panel width
-   ─────────────────────────────────────────────────────────────
-*/
 
 import { useEffect, useRef } from "react";
 import { ACCENT_HEX }        from "../constants";
