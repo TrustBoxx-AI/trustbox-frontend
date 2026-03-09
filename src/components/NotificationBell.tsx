@@ -1,4 +1,3 @@
-/* components/NotificationBell.tsx — TrustBox */
 
 import { useState }    from "react"
 import { Notification } from "../hooks/useHistory"
