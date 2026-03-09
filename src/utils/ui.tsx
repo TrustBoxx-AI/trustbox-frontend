@@ -1,7 +1,4 @@
-/* utils/ui.tsx — TrustBox Frontend
-   Shared helpers used across all history + page components.
-   Import from here — never redefine locally.
-   ───────────────────────────────────────────────────────── */
+
 
 // ── Date formatter ────────────────────────────────────────────
 export function formatDate(dateStr: string | null | undefined): string {
