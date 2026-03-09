@@ -1,6 +1,4 @@
-/* hooks/useDashboard.ts — TrustBox Frontend
-   Wires real API data into the dashboard.
-   ──────────────────────────────────────── */
+
 
 import { useState, useEffect, useCallback } from "react"
 import { API_URL }                           from "../constants"
