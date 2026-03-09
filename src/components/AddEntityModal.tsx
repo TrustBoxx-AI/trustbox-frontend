@@ -1,8 +1,4 @@
-/* components/AddEntityModal.tsx — TrustBox
-   Modal for adding any entity type to the box.
-   Original prop signature: onClose, onCommit
-   Field names synced to backend expectations.
-*/
+
 
 import { useState }         from "react";
 import { ENTITY_TYPES, ACCENT_HEX } from "../constants";
