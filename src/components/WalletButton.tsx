@@ -1,6 +1,3 @@
-/* components/WalletButton.tsx — TrustBox
-   Wallet connect/status button — exact design system match.
-*/
 
 import { useState }         from "react";
 import { useWalletContext } from "../context/WalletContext";
