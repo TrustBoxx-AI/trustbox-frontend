@@ -1,24 +1,3 @@
-/* Dashboard.tsx — TrustBox
-   Main dashboard: entity list (left) + 3D box stage (right).
-
-   Behavioral contract (from original):
-   ─────────────────────────────────────
-   Add entity:     idle → opening (1100ms) → open → commit → closing (950ms) → spinning
-   Execute action: parsing → (2200ms) → awaiting-approval → drawer opens
-   Other actions:  processing → drawer opens immediately
-   handleScored:
-     execute    → executing → (1200ms) → anchoring → (1400ms) → proved
-     score/audit/verify/blindaudit → anchoring → (1400ms) → proved
-     scan/others → (350ms) → scored
-
-   Additions over original:
-   ─────────────────────────────────────
-   - EntityContext (persists entities across route changes)
-   - Remove entity button
-   - Clean numeric score extraction (never passes object to canvas)
-   - Band labels (POOR/FAIR/GOOD/EXCELLENT) for score action
-   - updateEntity() for history tracking
-*/
 
 import { useState, useEffect }  from "react";
 import { useEntities }           from "../context/EntityContext";
