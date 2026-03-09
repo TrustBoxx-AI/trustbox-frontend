@@ -1,7 +1,4 @@
-/* context/EntityContext.tsx — TrustBox
-   Stores entities above the router so they survive tab switches.
-   Also persists to localStorage for page refreshes.
-*/
+
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
