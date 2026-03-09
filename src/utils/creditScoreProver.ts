@@ -1,15 +1,4 @@
-/* utils/creditScoreProver.ts — TrustBox Frontend
-   Generates a Groth16 ZK proof client-side using snarkjs.
-   Called by ResultsDrawer before hitting /api/score.
 
-   Setup:
-     1. Add to index.html (before the React bundle):
-        <script src="https://unpkg.com/snarkjs@0.7.3/build/snarkjs.min.js"></script>
-     2. Run compile-zk.sh on the backend to generate .wasm + .zkey
-     3. Copy zk/ folder into frontend public/zk/
-   ─────────────────────────────────────────────────────────────── */
-
-// snarkjs loaded via script tag — sets window.snarkjs (UMD build)
 declare const snarkjs: any;
 
 const WASM_URL = "/zk/CreditScore_js/CreditScore.wasm";
