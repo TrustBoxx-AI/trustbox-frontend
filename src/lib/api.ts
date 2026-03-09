@@ -1,6 +1,4 @@
-/* lib/api.ts — TrustBox Frontend
-   Typed API client — all calls go through here.
-   ──────────────────────────────────────────── */
+
 
 const BASE =
   typeof window !== "undefined" && window.location.hostname !== "localhost"
