@@ -1,6 +1,4 @@
-/* components/Ticker.tsx — TrustBox
-   Scrolling live-event ticker between hero and features.
-*/
+
 
 const EVENTS = [
   { icon:"ℏ", text:"CREDIT SCORE ANCHORED · HEDERA HCS",    color:"#8259EF" },
